@@ -1,4 +1,12 @@
-*.swp
-\#*#
+__pycache__/
+*.egg-info/
+build/
+env/
+env*/
+venv/
+*.pyk
+*.so
+\#*\#
 *~
 .\#*
+standalone

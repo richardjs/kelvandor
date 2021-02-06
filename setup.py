@@ -11,7 +11,7 @@ setup(
     package_dir={'': 'src',},
     packages=['kelvandor',],
 
-    # ext_modules=[
-    #     Extension('kelvandor.c', sources=['src/kelvandor/c/c.c',],),
-    # ],
+    ext_modules=[
+        Extension('kelvandor.c', sources=['src/kelvandor/c/c.c',],),
+    ],
 )
