@@ -39,6 +39,7 @@ struct State {
     uint_fast8_t playerScores[NUM_PLAYERS];   
 };
 
+
 void State_randomStart(struct State *state);
 void State_print(const struct State *state);
 
