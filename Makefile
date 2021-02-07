@@ -1,5 +1,9 @@
-module:
-	env/bin/pip install -e .
+CFLAGS=-std=c99 -Wall -O3
 
-standalone: src/kelvandor/c/c.c
-	cc -D STANDALONE -Wall src/kelvandor/c/c.c -o standalone
+all: kelvandor
+
+kelvandor: state.o main.o
+
+clean:
+	rm *.o
+	rm kelvandor

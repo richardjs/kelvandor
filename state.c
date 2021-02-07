@@ -1,7 +1,4 @@
-#ifndef STANDALONE
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-#endif
+#include "state.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -9,50 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-
-typedef uint_fast32_t nodebits;
-typedef uint_fast64_t branchbits;
-
-#define NUM_PLAYERS 2
-#define NUM_RESOURCES 4
-#define MAX_LIMIT 3
-#define NUM_SQUARES (3*4 + 1)
-#define NUM_CORNERS 24
-#define NUM_EDGES 36
-
-enum Player {PLAYER_1=0, PLAYER_2};
-enum Resource {RED=0, YELLOW, BLUE, GREEN};
-
-
-void bitboardToArray(uint_fast64_t bitboard, uint_fast8_t *array, size_t size) {
-    for (int i = 0; i < size; i++) {
-        array[i] = ((1llu << i) & bitboard) > 1;
-    }
-}
-
-
-struct Square {
-    enum Resource resource;
-    uint_fast8_t limit;
-};
-
-
-struct State {
-    // Unchanging information
-    struct Square squares[NUM_SQUARES];
-
-    // Core information
-    nodebits nodes[2];
-    branchbits branches[2];
-
-    uint_fast8_t playerResources[NUM_PLAYERS][NUM_RESOURCES];
-
-    enum Player turn;
-
-    // Derived information
-    uint_fast8_t playerScores[NUM_PLAYERS];   
-};
 
 
 void State_randomStart(struct State *state) {
@@ -135,47 +88,3 @@ void State_print(const struct State *state) {
     fprintf(stderr, "      %c%c%c%c\n", ec[33], rc[12], lc[12], ec[34]);
     fprintf(stderr, "      %c%c%c%c\n", nc[22], ec[35], ec[35], nc[23]);
 }
-
-
-#ifndef STANDALONE
-
-
-static PyObject *c_minimax(PyObject *self, PyObject *args) {
-    return PyFloat_FromDouble(1.0);
-}
-
-
-static PyMethodDef CMethods[] = {
-    {"minimax", c_minimax, METH_VARARGS, "Score a state with minimax."},
-    {NULL, NULL, 0, NULL}
-};
-
-
-static struct PyModuleDef cmodule = {
-    PyModuleDef_HEAD_INIT,
-    "c",
-    NULL,
-    -1,
-    CMethods
-};
-
-
-PyMODINIT_FUNC PyInit_c(void) {
-    return PyModule_Create(&cmodule);
-}
-
-
-#else
-
-
-int main() {
-    srand(time(NULL));
-    struct State state;
-    State_randomStart(&state);
-    State_print(&state);
-
-    return 0;
-}
-
-
-#endif
