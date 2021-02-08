@@ -4,6 +4,9 @@
 #include <string.h>
 
 
+#define popcount(x) __builtin_popcount(x)
+
+
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
@@ -28,27 +31,46 @@ void State_randomStart(struct State *state) {
 
 
 void State_derive(struct State *state) {
-    // Derive nodeCount
-    memset(state->nodeCount, 0, sizeof(state->nodeCount)*NUM_PLAYERS);
-    for (int i = 0; i < NUM_CORNERS; i++) {
-        uint_fast32_t bit = 1lu << i;
-        for(enum Player player = 0; player < NUM_PLAYERS; player++) {
-            if (bit & state->nodes[player]) {
-                state->nodeCount[player] += 1;
-            }
-        }
-    }
-
     // Derive scores
     // TODO Account for captured squares
     // TODO Account for largest network
     for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-        state->scores[player] = state->nodeCount[player];
+        state->score[player] = popcount(state->nodes[player]);
     }
 
     // Derive phase
     state->phase = PLACE;
-    if (state->nodeCount[PLAYER_1] >= 2){
+    if (popcount(state->nodes[PLAYER_1]) >= START_NODES){
         state->phase = PLAY;
     }
+}
+
+
+void State_act(struct State *state, const struct Action *action) {
+    #ifdef KELV_CHECKLEGAL
+    // TODO Checks for legality will go here
+    #endif
+    
+    // Process trade
+    enum Player turn = state->turn;
+    if (action->trade != NULL) {
+        for(int i = 0; i < TRADE_NUM; i++) {
+            state->resources[turn][action->trade->in[i]]--;
+        }
+        state->resources[turn][action->trade->out]++;
+    }
+
+    // Add nodes
+    state->nodes[state->turn] |= action->nodes;
+    state->score[state->turn] = popcount(state->nodes[state->turn]);
+    // TODO Check for exhaustion
+    // TODO Update cache of resources/turn
+
+    // Add branches
+    state->branches[state->turn] |= action->branches;
+    // TODO Check for captures
+    // TODO Check for largest network
+
+    // Next player's turn
+    state->turn = !turn;
 }
