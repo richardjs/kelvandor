@@ -85,8 +85,23 @@ void State_updateCaptured(struct State *state, int square) {
         }
     }
 
-    nocapture:
     return;
+
+    nocapture:
+    // Normally we could leave state alone if there are no captures.
+    // However, we want to support undo, and thus we'll need to mark the
+    // squares we visited as uncaptured (since they may have been
+    // captured by a move being undone).
+    // TODO It might be worth it to create a separate version of this
+    // function, or by some other means skip this processing when not
+    // undoing (especially since we'll never capture by undoing either).
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        if (crumbs[i]) {
+            for (enum Player p = 0; p < NUM_PLAYERS; p++) {
+                state->captured[p] &= ~(1llu << i);
+            }
+        }
+    }
 }
 
 
@@ -203,14 +218,14 @@ void State_undo(struct State *state, const struct Action *action) {
 
     // Undo branches
     // TODO Could this be subtract?
-    state->branches[state->turn] &= ~action->branches;
+    state->branches[turn] &= ~action->branches;
     int branchCount = popcount(action->branches);
 
     // Refund resources for branches
-    state->resources[state->turn][RED] += branchCount;
-    state->resources[state->turn][BLUE] += branchCount;
+    state->resources[turn][RED] += branchCount;
+    state->resources[turn][BLUE] += branchCount;
 
-    // Check to see if any squares are no longer captured
+    // Check if any squares are no longer captured
     uint_fast64_t bits = action->branches;
     while(bits) {
         int branch = bitscan(bits);
