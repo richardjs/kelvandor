@@ -25,6 +25,51 @@ int main() {
     }
 
 
+    State_randomStart(&state);
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        State_updateCaptured(&state, i);
+        if (state.captured[0] > 0 || state.captured[1] > 0) {
+            printf("A square on a blank board marked captured: %d\n", i);
+        }
+    }
+
+    // Basic test of updateCaptured for a single square
+    State_randomStart(&state);
+    state.branches[0] = 0b10111;
+    State_updateCaptured(&state, 0);
+    if (state.captured[0] != 0x1) {
+        printf("A square not marked captured, case 1: %d\n", 0);
+    }
+    for (int i = 1; i < NUM_SQUARES; i++) {
+        state.captured[0] = 0x1;
+        State_updateCaptured(&state, i);
+        if (state.captured[0] != 0x1 || state.captured[1] > 0) {
+            printf("A square incorrectly marked captured: sq=%d captured[0]=0x%x\n", i, state.captured[0]);
+            State_print(&state);
+            printf("---\n");
+        }
+    }
+
+    // Testing captures of mutiple squares
+    State_randomStart(&state);
+    state.branches[1] = 0b110001010000100110010000;
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        state.captured[1] = 0;
+        State_updateCaptured(&state, i);
+        if (state.captured[0]) {
+            printf("state.captured[0] shouldn't have anything: %x\n", state.captured[0]);
+        }
+        if (i == 2 || i == 5 || i == 6) {
+            if (state.captured[1] != 0b1100100) {
+                printf("2, 5, and 6 should be captured: %x\n", state.captured[1]);
+            }
+        } else {
+            if (state.captured[1] != 0) {
+                printf("nothing should be captured: %x\n", state.captured[1]);
+            }
+        }
+    }
+
     printf("Done\n");
     return 0;
 }   

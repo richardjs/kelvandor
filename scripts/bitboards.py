@@ -11,6 +11,7 @@ def make_node_bitboard(bits):
 def make_branch_bitboard(bits):
     bitboard = np.uint64()
     for bit in bits:
+        print(bit)
         bitboard |= (1 << bit)
     return bitboard
 

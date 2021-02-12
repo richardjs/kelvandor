@@ -35,7 +35,7 @@ struct State {
 
     // Derived information:
     // - What squares each player has captured
-    uint_fast8_t captured[NUM_PLAYERS][NUM_SQUARES];
+    uint_fast8_t captured[NUM_PLAYERS];
     uint_fast8_t capturedCount[NUM_PLAYERS];
 
     uint_fast8_t score[NUM_PLAYERS];
@@ -52,8 +52,8 @@ struct Trade {
 
 struct Action {
     struct Trade *trade;
-    uint_fast32_t nodes;
     uint_fast64_t branches;
+    uint_fast32_t nodes;
 };
 
 
@@ -64,7 +64,8 @@ void State_randomStart(struct State *state);
 // loading a state or making changes outside of normal operations.
 void State_derive(struct State *state);
 
-void State_action(struct State *state, const struct Action *action);
+void State_act(struct State *state, const struct Action *action);
+void State_undo(struct State *state, const struct Action *action);
 
 // Print state to stderr
 void State_print(const struct State *state);
