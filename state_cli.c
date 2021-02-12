@@ -60,3 +60,21 @@ void State_print(const struct State *state) {
     fprintf(stderr, "      %c%c%c%c\n", ec[33], rc[12], lc[12], ec[34]);
     fprintf(stderr, "      %c%c%c%c\n", nc[22], ec[35], ec[35], nc[23]);
 }
+
+
+void State_printDetail(const struct State *state) {
+	State_print(state);
+	fprintf(stderr, "Phase:\t%d\n", state->phase);
+	fprintf(stderr, "Turn:\t%d\n", state->turn);
+	for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+		fprintf(stderr, "Player %d:\n", player);
+		fprintf(stderr, "\tScore:\t%d\n", state->score[player]);
+		for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
+		fprintf(stderr, "\tResource %d: %d (+%d)",
+			resource, state->resources[player][resource],
+			state->income[player][resource]);
+		}
+		fprintf(stderr, "\n");
+		fprintf(stderr, "\tCaptured:\t%x\n", state->captured[player]);
+	}
+}

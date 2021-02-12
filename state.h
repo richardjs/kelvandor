@@ -1,6 +1,7 @@
 #ifndef STATE_H
 #define STATE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define NUM_PLAYERS 2
@@ -24,19 +25,23 @@ struct Square {
 
 
 struct State {
-    // Unchanging (per game) information:
+    /* Static information */
     struct Square squares[NUM_SQUARES];
 
-    // Core information:
-    uint_fast32_t nodes[2];
-    uint_fast64_t branches[2];
+    /* Core information */
+
+    uint_fast32_t nodes[NUM_PLAYERS];
+    uint_fast64_t branches[NUM_PLAYERS];
     uint_fast8_t resources[NUM_PLAYERS][NUM_RESOURCES];
     enum Player turn;
 
-    // Derived information:
-    // - What squares each player has captured
+    /* Derived information */
+
+    // Each player's resources-per-turn income
+    uint_fast8_t income[NUM_PLAYERS][NUM_RESOURCES];
+
+    // What squares each player has captured
     uint_fast8_t captured[NUM_PLAYERS];
-    uint_fast8_t capturedCount[NUM_PLAYERS];
 
     uint_fast8_t score[NUM_PLAYERS];
 
@@ -45,13 +50,14 @@ struct State {
 
 
 struct Trade {
+    bool active;
     enum Resource in[TRADE_NUM];
     enum Resource out;
 };
 
 
 struct Action {
-    struct Trade *trade;
+    struct Trade trade;
     uint_fast64_t branches;
     uint_fast32_t nodes;
 };

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 
@@ -69,6 +70,28 @@ int main() {
             }
         }
     }
+
+
+    // Test basic undo
+    State_randomStart(&state);
+    struct State original = state;
+    struct Action action;
+    action.trade.active = true;
+    action.trade.in[0] = YELLOW;
+    action.trade.in[1] = RED;
+    action.trade.in[2] = BLUE;
+    action.trade.out = GREEN;
+    action.branches = 0b11111;
+    action.nodes = 0b101;
+    State_act(&state, &action);
+    State_undo(&state, &action);
+    if (memcmp(&state, &original, sizeof(struct State)) != 0) { 
+       printf("Acting and undoing does not result in identical state\n");
+       State_printDetail(&state);
+       State_printDetail(&original);
+       printf("---\n");
+    }
+
 
     printf("Done\n");
     return 0;

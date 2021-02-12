@@ -1,7 +1,6 @@
 #include "lookups.h"
 #include "state.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -75,8 +74,8 @@ void State_updateCaptured(struct State *state, int square) {
         }
     }
 
-    // TODO We need to check for nodes within a region as well--it
-    // can't be captured if there's the other player's nodes in it
+    // TODO Add blocks to branches being built by opponent within
+    // captured region
 
     // If we've gotten here, the searched squares are a captured region;
     // mark them all as captured by player
@@ -94,7 +93,7 @@ void State_updateCaptured(struct State *state, int square) {
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
-    
+
     // Randomize the starting squares by interating through all squares
     // and picking a random location for each. The vacant square will
     // be at the last location.
@@ -138,11 +137,11 @@ void State_act(struct State *state, const struct Action *action) {
     enum Player turn = state->turn;
     
     // Process trade
-    if (action->trade != NULL) {
+    if (action->trade.active) {
         for (int i = 0; i < TRADE_NUM; i++) {
-            state->resources[turn][action->trade->in[i]]--;
+            state->resources[turn][action->trade.in[i]]--;
         }
-        state->resources[turn][action->trade->out]++;
+        state->resources[turn][action->trade.out]++;
     }
 
     // Process branches
@@ -154,6 +153,7 @@ void State_act(struct State *state, const struct Action *action) {
     state->resources[state->turn][RED] -= branchCount;
     state->resources[state->turn][BLUE] -= branchCount;
 
+    // Check for new captured regions
     uint_fast64_t bits = action->branches;
     while(bits) {
         int branch = bitscan(bits);
@@ -164,6 +164,7 @@ void State_act(struct State *state, const struct Action *action) {
             State_updateCaptured(state, square);
         }
     }
+
     // TODO Score processing and whatever else after captures are updated?
     // TODO Check for largest network
 
@@ -188,14 +189,16 @@ void State_act(struct State *state, const struct Action *action) {
 
 
 void State_undo(struct State *state, const struct Action *action) {
+    // Undo turn advance
+    state->turn = !state->turn;
     enum Player turn = state->turn;
 
     // Undo trade
-    if (action->trade != NULL) {
+    if (action->trade.active) {
         for (int i = 0; i < TRADE_NUM; i++) {
-            state->resources[turn][action->trade->in[i]]++;
+            state->resources[turn][action->trade.in[i]]++;
         }
-        state->resources[turn][action->trade->out]--;
+        state->resources[turn][action->trade.out]--;
     }
 
     // Undo branches
@@ -207,6 +210,18 @@ void State_undo(struct State *state, const struct Action *action) {
     state->resources[state->turn][RED] += branchCount;
     state->resources[state->turn][BLUE] += branchCount;
 
+    // Check to see if any squares are no longer captured
+    uint_fast64_t bits = action->branches;
+    while(bits) {
+        int branch = bitscan(bits);
+        bits ^= (1llu << branch);
+        for (int i = 0; i < 2; i++) {
+            int square = EDGE_ADJACENT_SQUARES[branch][i];
+            if (square < 0) break;
+            State_updateCaptured(state, square);
+        }
+    }
+
     // Undo nodes
     state->nodes[state->turn] &= ~action->nodes;
     int nodeCount = popcount(action->nodes);
@@ -217,7 +232,4 @@ void State_undo(struct State *state, const struct Action *action) {
 
     // Update score
     state->score[state->turn] -= nodeCount;
-
-    // Previous player's turn
-    state->turn = !turn;
 }
