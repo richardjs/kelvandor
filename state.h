@@ -79,6 +79,7 @@ void State_undo(struct State *state, const struct Action *action);
 
 // Print state to stderr
 void State_print(const struct State *state);
+void State_printDetail(const struct State *state);
 
 
 /* Internal */
