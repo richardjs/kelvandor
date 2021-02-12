@@ -57,17 +57,31 @@ struct Action {
 };
 
 
+/* Initializers */
+
 // Start a game, with a standard random layout
 void State_randomStart(struct State *state);
+
+
+/* Core operations */
+
+void State_act(struct State *state, const struct Action *action);
+void State_undo(struct State *state, const struct Action *action);
+
+
+/* Interface */
+
+// Print state to stderr
+void State_print(const struct State *state);
+
+
+/* Internal */
 
 // Calculate the derived information from code information. Useful when
 // loading a state or making changes outside of normal operations.
 void State_derive(struct State *state);
 
-void State_act(struct State *state, const struct Action *action);
-void State_undo(struct State *state, const struct Action *action);
+void State_updateCaptured(struct State *state, int square);
 
-// Print state to stderr
-void State_print(const struct State *state);
 
 #endif
