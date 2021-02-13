@@ -1,6 +1,6 @@
 CFLAGS=-std=c99 -Wall -O3
 
-objects=state.o state_cli.o
+objects=state.o state_cli.o lookups.o
 
 all: kelvandor
 

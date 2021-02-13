@@ -1,5 +1,5 @@
-#include "lookups.h"
 #include "state.h"
+#include "lookups.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +27,7 @@ void State_updateCaptured(struct State *state, int square) {
     // captures the region.
     int player = -1;
 
-    while(size) {
+    while (size) {
         int sq = stack[--size];  
         crumbs[sq] = true;
         
@@ -105,6 +105,60 @@ void State_updateCaptured(struct State *state, int square) {
 }
 
 
+int State_largestNetworkSize(const struct State *state, enum Player player) {
+    uint_fast64_t branches = state->branches[player];    
+
+    uint_fast64_t networks[NUM_SQUARES] = {0};
+    uint_fast64_t networksAdjacents[NUM_SQUARES] = {0};
+    int count = 0;
+
+    while (branches) {
+        int branch = bitscan(branches);
+        branches ^= (1llu << branch);
+
+        if (count == 0) {
+            networks[count] = (1llu << branch);
+            networksAdjacents[count++] = EDGE_ADJACENT_EDGES[branch];
+        } else {
+            for (int i = 0; i < count; i++) {
+                if ((1llu << branch) & networksAdjacents[i]) {
+                    networks[i] |= (1llu << branch);
+                    networksAdjacents[i] |= EDGE_ADJACENT_EDGES[branch];
+                    goto nextbit;
+                }
+            }
+
+            networks[count] =  (1llu << branch);
+            networksAdjacents[count++] = EDGE_ADJACENT_EDGES[branch];
+        }
+
+        nextbit:
+        continue;
+    }
+
+    int largestSize = 0;
+    for (int i = 0; i < count; i++) {
+        for (int j = i + 1; j < i; j++) {
+            if (networks[i] & networks[j]) {
+                networks[i] |= networks[j];
+            }
+        }
+
+        int networkSize = popcount(networks[i]);
+        if (networkSize > largestSize) {
+            largestSize = networkSize;
+        }
+    }
+
+    return largestSize;
+}
+
+
+void State_updateLargestNework(struct State *state) {
+    
+}
+
+
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
@@ -170,7 +224,7 @@ void State_act(struct State *state, const struct Action *action) {
 
     // Check for new captured regions
     uint_fast64_t bits = action->branches;
-    while(bits) {
+    while (bits) {
         int branch = bitscan(bits);
         bits ^= (1llu << branch);
         for (int i = 0; i < 2; i++) {
@@ -227,7 +281,7 @@ void State_undo(struct State *state, const struct Action *action) {
 
     // Check if any squares are no longer captured
     uint_fast64_t bits = action->branches;
-    while(bits) {
+    while (bits) {
         int branch = bitscan(bits);
         bits ^= (1llu << branch);
         for (int i = 0; i < 2; i++) {

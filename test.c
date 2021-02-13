@@ -1,3 +1,4 @@
+#include "lookups.h"
 #include "state.h"
 
 #include <stdio.h>
@@ -90,6 +91,20 @@ int main() {
        State_printDetail(&state);
        State_printDetail(&original);
        printf("---\n");
+    }
+
+
+    // Test calculating network sizes
+    State_randomStart(&state);
+    state.branches[0] = 0b10000000000001;
+    int size = State_largestNetworkSize(&state, PLAYER_1);
+    if (size != 1) {
+        printf("Error calculating largest network size in simple case: %d\n", size);
+    }
+    state.branches[0] = 0b1000000000001000010011001000;
+    size = State_largestNetworkSize(&state, PLAYER_1);
+    if (size != 5) {
+        printf("Error calculating largest network size in more complex case: %d\n", size);
     }
 
 
