@@ -107,6 +107,8 @@ int main() {
         printf("Error calculating largest network size in more complex case: %d\n", size);
     }
 
+    // TODO test one player taking the largest network from the other, and tying
+
 
     printf("Done\n");
     return 0;

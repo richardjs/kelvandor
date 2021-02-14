@@ -13,7 +13,7 @@
 #define START_NODES 2
 #define TRADE_NUM 3
 
-enum Player {PLAYER_1=0, PLAYER_2};
+enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
 enum Resource {RED=0, YELLOW, BLUE, GREEN};
 enum Phase {PLACE, PLAY};
 
@@ -42,6 +42,9 @@ struct State {
 
     // What squares each player has captured
     uint_fast8_t captured[NUM_PLAYERS];
+
+    uint_fast8_t largestNetworkSize;
+    enum Player largestNetworkPlayer;
 
     uint_fast8_t score[NUM_PLAYERS];
 

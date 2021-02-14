@@ -154,14 +154,11 @@ int State_largestNetworkSize(const struct State *state, enum Player player) {
 }
 
 
-void State_updateLargestNework(struct State *state) {
-    
-}
-
-
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
+
+    state->largestNetworkPlayer = PLAYER_NONE;
 
     // Randomize the starting squares by interating through all squares
     // and picking a random location for each. The vacant square will
@@ -234,8 +231,21 @@ void State_act(struct State *state, const struct Action *action) {
         }
     }
 
+    // Check for largest network changes
+    if (action->branches) {
+        int networkSize = State_largestNetworkSize(state, turn);
+        if (networkSize > state->largestNetworkSize) {
+            state->largestNetworkSize = networkSize;
+            state->largestNetworkPlayer = turn;
+        } else if (networkSize == state->largestNetworkSize
+                && turn != state->largestNetworkPlayer) {
+            state->largestNetworkPlayer = PLAYER_NONE;
+        }
+    }
+    // TODO add scoring for network changes
+
+
     // TODO Score processing and whatever else after captures are updated?
-    // TODO Check for largest network
 
     // Process nodes
     state->nodes[state->turn] |= action->nodes;
@@ -288,6 +298,22 @@ void State_undo(struct State *state, const struct Action *action) {
             int square = EDGE_ADJACENT_SQUARES[branch][i];
             if (square < 0) break;
             State_updateCaptured(state, square);
+        }
+    }
+
+    // Check for largest network changes
+    if (action->branches) {
+        int size1 = State_largestNetworkSize(state, PLAYER_1);
+        int size2 = State_largestNetworkSize(state, PLAYER_2);
+        if (size1 > size2) {
+            state->largestNetworkSize = size1;
+            state->largestNetworkPlayer = PLAYER_1;
+        } else if (size2 > size1) {
+            state->largestNetworkSize = size2;
+            state->largestNetworkPlayer = PLAYER_2;
+        } else {
+            state->largestNetworkSize = size1;
+            state->largestNetworkPlayer = PLAYER_NONE;
         }
     }
 
