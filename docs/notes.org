@@ -1,5 +1,12 @@
 * Board representation
 
+** Todo
+- [ ] start placement
+- [ ] getting resources
+- [ ] available placements
+- [ ] available trades
+- [ ] legality checking
+
 ** Layout
                  *0*  0  *1*
 
