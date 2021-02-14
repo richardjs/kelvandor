@@ -1,0 +1,1 @@
+export const SIZE_TILE = 100;
