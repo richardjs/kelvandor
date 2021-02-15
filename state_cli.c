@@ -66,10 +66,13 @@ void State_printDetail(const struct State *state) {
 	State_print(state);
 	fprintf(stderr, "Phase:\t%d\n", state->phase);
 	fprintf(stderr, "Turn:\t%d\n", state->turn);
+
 	for (enum Player player = 0; player < NUM_PLAYERS; player++) {
 		fprintf(stderr, "Player %d:", player);
 		fprintf(stderr, "\tScore:\t%d", state->score[player]);
+		fprintf(stderr, "\tNodes:\t%d", popcount(state->nodes[player]));
 		fprintf(stderr, "\tCaptured:\t%x\n", state->captured[player]);
+
 		for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
 		fprintf(stderr, "\tResource %d: %d (+%d)",
 			resource, state->resources[player][resource],

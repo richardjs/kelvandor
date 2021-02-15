@@ -5,15 +5,19 @@
 #include <string.h>
 
 
-#define popcount(x) __builtin_popcount(x)
-#define bitscan(x) __builtin_ctzl(x)
-
-
 // Updates if the given square is captured, as well as any connected
 // squares in a captured region. Typically called after a branch is
 // placed, to determine if the squares adjacent to the branch are now
 // captured.
-void State_updateCaptured(struct State *state, int square) {
+// Returns whether a capture took place.
+bool State_updateCaptured(struct State *state, int square) {
+    /* We can't do this right now, as this is used for undoing as well.
+    if (state->captured[0] & (1llu << square)
+            || state->captured[1] & (1llu << square)) {
+        return false;
+    }
+    */
+
     // Search mechanics
     int stack[NUM_SQUARES];
     int size = 0;
@@ -85,7 +89,7 @@ void State_updateCaptured(struct State *state, int square) {
         }
     }
 
-    return;
+    return true;
 
     nocapture:
     // Normally we could leave state alone if there are no captures.
@@ -102,6 +106,8 @@ void State_updateCaptured(struct State *state, int square) {
             }
         }
     }
+
+    return false;
 }
 
 
@@ -181,17 +187,47 @@ void State_randomStart(struct State *state) {
 
 void State_derive(struct State *state) {
     // Derive scores
-    // TODO Account for captured squares
-    // TODO Account for largest network
     for (enum Player player = 0; player < NUM_PLAYERS; player++) {
         state->score[player] = popcount(state->nodes[player]);
     }
 
+    // Captured squares
+    for (int i = 0; i < NUM_SQUARES; i++ ) {
+        State_updateCaptured(state, i);
+        for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+            if (state->captured[player] & (1llu << i)) {
+                state->score[player]++;
+                break;
+            }
+        }
+    }
+
+    // Largest network
+    state->largestNetworkSize = 0;
+    state->largestNetworkPlayer = PLAYER_NONE;
+    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+        int size = State_largestNetworkSize(state, player);
+        if (size > state->largestNetworkSize) {
+            state->largestNetworkSize = size;
+            if (state->largestNetworkPlayer != PLAYER_NONE) {
+                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
+            }
+            state->score[player] += LARGEST_NETWORK_SCORE;
+            state->largestNetworkPlayer = player;
+        } else if (size == state->largestNetworkSize) {
+            if (state->largestNetworkPlayer != PLAYER_NONE) {
+                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
+            }
+        }
+    }
+
+    /* Taking this out until it's implemented in State_act as well.
     // Derive phase
     state->phase = PLACE;
     if (popcount(state->nodes[PLAYER_1]) >= START_NODES){
         state->phase = PLAY;
     }
+    */
 }
 
 
@@ -221,31 +257,49 @@ void State_act(struct State *state, const struct Action *action) {
 
     // Check for new captured regions
     uint_fast64_t bits = action->branches;
+    bool newCapture = false;
     while (bits) {
         int branch = bitscan(bits);
         bits ^= (1llu << branch);
         for (int i = 0; i < 2; i++) {
             int square = EDGE_ADJACENT_SQUARES[branch][i];
             if (square < 0) break;
-            State_updateCaptured(state, square);
+            newCapture = State_updateCaptured(state, square) || newCapture;
         }
+    }
+    if (newCapture) {
+        state->score[turn] = popcount(state->captured[turn]);
     }
 
     // Check for largest network changes
     if (action->branches) {
         int networkSize = State_largestNetworkSize(state, turn);
+        // If we've got a new largest network size
         if (networkSize > state->largestNetworkSize) {
             state->largestNetworkSize = networkSize;
-            state->largestNetworkPlayer = turn;
+            // If the moving player didn't already have the largest ntwork
+            if (state->largestNetworkPlayer != turn) {
+                state->largestNetworkPlayer = turn;
+                // If the other player previously had the largest
+                // network, lower their score
+                if (state->largestNetworkPlayer == !turn) {
+                    state->score[!turn] -= LARGEST_NETWORK_SCORE;
+                }
+                // Raise current player's score
+                state->score[turn] += LARGEST_NETWORK_SCORE;
+            }
+        // If current player has tied the largest network size, and did
+        // not already have it
         } else if (networkSize == state->largestNetworkSize
                 && turn != state->largestNetworkPlayer) {
+            // If the other player had the largest network before, they
+            // no longer have it
+            if (state->largestNetworkPlayer == !turn) {
+                state->score[!turn] -= LARGEST_NETWORK_SCORE;
+            }
             state->largestNetworkPlayer = PLAYER_NONE;
         }
     }
-    // TODO add scoring for network changes
-
-
-    // TODO Score processing and whatever else after captures are updated?
 
     // Process nodes
     state->nodes[state->turn] |= action->nodes;
@@ -256,7 +310,6 @@ void State_act(struct State *state, const struct Action *action) {
     state->resources[state->turn][YELLOW] -= nodeCount;
     state->resources[state->turn][GREEN] -= nodeCount;
 
-    // Update score
     state->score[state->turn] += nodeCount;
 
     // TODO Check for exhaustion
@@ -300,6 +353,8 @@ void State_undo(struct State *state, const struct Action *action) {
             State_updateCaptured(state, square);
         }
     }
+    // TODO Can/should we make this conditional?
+    state->score[turn] = popcount(state->captured[turn]);
 
     // Check for largest network changes
     if (action->branches) {
@@ -308,9 +363,11 @@ void State_undo(struct State *state, const struct Action *action) {
         if (size1 > size2) {
             state->largestNetworkSize = size1;
             state->largestNetworkPlayer = PLAYER_1;
+            state->score[PLAYER_1] += 2;
         } else if (size2 > size1) {
             state->largestNetworkSize = size2;
             state->largestNetworkPlayer = PLAYER_2;
+            state->score[PLAYER_2] += 2;
         } else {
             state->largestNetworkSize = size1;
             state->largestNetworkPlayer = PLAYER_NONE;
@@ -326,5 +383,6 @@ void State_undo(struct State *state, const struct Action *action) {
     state->resources[state->turn][GREEN] += nodeCount;
 
     // Update score
-    state->score[state->turn] -= nodeCount;
+    // TODO Can we do this without popcounting?
+    state->score[state->turn] += popcount(state->nodes[turn]);
 }

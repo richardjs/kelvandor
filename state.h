@@ -4,6 +4,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+#define popcount(x) __builtin_popcount(x)
+#define bitscan(x) __builtin_ctzl(x)
+
+
 #define NUM_PLAYERS 2
 #define NUM_RESOURCES 4
 #define MAX_LIMIT 3
@@ -12,6 +17,7 @@
 #define NUM_EDGES 36
 #define START_NODES 2
 #define TRADE_NUM 3
+#define LARGEST_NETWORK_SCORE 2
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
 enum Resource {RED=0, YELLOW, BLUE, GREEN};
@@ -91,7 +97,8 @@ void State_printDetail(const struct State *state);
 // loading a state or making changes outside of normal operations.
 void State_derive(struct State *state);
 
-void State_updateCaptured(struct State *state, int square);
+bool State_updateCaptured(struct State *state, int square);
 
+int State_largestNetworkSize(const struct State *state, enum Player player);
 
 #endif
