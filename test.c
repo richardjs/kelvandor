@@ -128,6 +128,13 @@ int main() {
        printf("---\n");
     }
 
+    State_randomStart(&state);
+    state.resources[0][RED] = 20;
+    state.resources[0][BLUE] = 20;
+    state.resources[0][GREEN] = 20;
+    state.resources[0][YELLOW] = 20;
+    State_actions(&state);
+
     printf("Done\n");
     return 0;
 }   

@@ -231,6 +231,77 @@ void State_derive(struct State *state) {
 }
 
 
+struct Action *State_actions(const struct State *state) {
+    const uint_fast8_t *resources = state->resources[state->turn];
+
+    // TODO Verify this is the max combinations of trade
+    struct Trade trades[41];
+    int tradeCount = 0;
+
+    trades[tradeCount++].active = false;
+
+    for (enum Resource in1 = 0; in1 < NUM_RESOURCES; in1++ ) {
+        for (enum Resource in2 = in1; in2 < NUM_RESOURCES; in2++ ) {
+            for (enum Resource in3 = in2; in3 < NUM_RESOURCES; in3++ ) {
+                int inResources[NUM_RESOURCES] = {0};
+                inResources[in1]++;
+                inResources[in2]++;
+                inResources[in3]++;
+                for (enum Resource r = 0; r < NUM_RESOURCES; r++) {
+                    if (inResources[r] > resources[r]) {
+                        goto next;
+                    }
+                }
+
+                for (enum Resource out = 0; out < NUM_RESOURCES; out++ ) {
+                    if (out == in1 || out == in2 || out == in3) {
+                        continue;
+                    }
+
+                    trades[tradeCount].active = true;
+                    trades[tradeCount].in[0] = in1;
+                    trades[tradeCount].in[1] = in2;
+                    trades[tradeCount].in[2] = in3;
+                    trades[tradeCount].out = out;
+                    tradeCount++;
+
+                    printf("%d %d %d for %d\n", in1, in2, in3, out);
+                }
+
+                next:
+                continue;
+            }
+        }
+    }
+
+    printf("%d\n", tradeCount);
+
+    for (int i = 0; i < tradeCount; i++) {
+        uint_fast8_t rs[NUM_RESOURCES];
+        for (enum Resource r = 0; r < NUM_RESOURCES; r++) {
+            rs[r] = resources[r];
+        }
+
+        if (trades[i].active) {
+            for (int j = 0; j < TRADE_NUM; j++) {
+                rs[trades[i].in[j]]--;
+            }
+            rs[trades[i].out]++;
+        }
+
+        int nodeBuilds = rs[GREEN] < rs[YELLOW] ?
+            rs[GREEN] / 2 : rs[YELLOW] / 2;
+        int branchBuilds = resources[BLUE] < resources[RED]
+            ? rs[BLUE] : rs[RED];
+
+        printf("%d nodes, %d branches\n", nodeBuilds, branchBuilds);
+
+        // TODO we're going to need a way to determine where we can build
+    }
+
+}
+
+
 void State_act(struct State *state, const struct Action *action) {
     #ifdef KELV_CHECKLEGAL
     // TODO Checks for legality will go here
