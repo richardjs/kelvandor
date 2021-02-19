@@ -14,7 +14,7 @@ int main() {
     printf("Seed: %ld\n", seed);
     srand(seed);
 
-    printf("Running tests..\n");
+    printf("Running tests...\n");
 
     struct State state;
     State_randomStart(&state);
@@ -129,10 +129,12 @@ int main() {
     }
 
     State_randomStart(&state);
-    state.resources[0][RED] = 20;
-    state.resources[0][BLUE] = 20;
-    state.resources[0][GREEN] = 20;
-    state.resources[0][YELLOW] = 20;
+    state.resources[0][RED] = 8;
+    state.resources[0][BLUE] = 8;
+    state.resources[0][GREEN] = 8;
+    state.resources[0][YELLOW] = 8;
+    state.nodes[0] = 1;
+    state.branches[0] = 1;
     State_actions(&state);
 
     printf("Done\n");

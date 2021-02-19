@@ -230,6 +230,11 @@ void State_derive(struct State *state) {
     */
 }
 
+uint64_t State_actionsFrom(
+        uint_fast64_t branches,
+        uint_fast64_t openEdges, uint_fast32_t openCorners,
+        int branchBuilds, int nodeBuilds);
+
 
 struct Action *State_actions(const struct State *state) {
     const uint_fast8_t *resources = state->resources[state->turn];
@@ -264,8 +269,6 @@ struct Action *State_actions(const struct State *state) {
                     trades[tradeCount].in[2] = in3;
                     trades[tradeCount].out = out;
                     tradeCount++;
-
-                    printf("%d %d %d for %d\n", in1, in2, in3, out);
                 }
 
                 next:
@@ -274,8 +277,22 @@ struct Action *State_actions(const struct State *state) {
         }
     }
 
-    printf("%d\n", tradeCount);
+    uint_fast64_t availableCorners = 0;
+    uint_fast32_t availableEdges = 0;
+    uint_fast32_t bits = state->branches[state->turn];
+    while (bits) {
+        int bit = bitscan(bits);
+        bits ^= (1llu << bit);
 
+        availableCorners |= EDGE_ADJACENT_CORNERS[bit];
+        availableEdges |= EDGE_ADJACENT_EDGES[bit];
+    }
+    uint_fast32_t openEdges = ~state->branches[PLAYER_1] & ~state->branches[PLAYER_2];
+    availableEdges &= openEdges;
+    uint_fast64_t openCorners = ~state->nodes[PLAYER_1] & ~state->nodes[PLAYER_2];
+    availableCorners &= openCorners;
+
+    uint64_t actionCount = 0;
     for (int i = 0; i < tradeCount; i++) {
         uint_fast8_t rs[NUM_RESOURCES];
         for (enum Resource r = 0; r < NUM_RESOURCES; r++) {
@@ -289,18 +306,65 @@ struct Action *State_actions(const struct State *state) {
             rs[trades[i].out]++;
         }
 
+        int branchBuilds = rs[BLUE] < rs[RED]
+            ? rs[BLUE] : rs[RED];
         int nodeBuilds = rs[GREEN] < rs[YELLOW] ?
             rs[GREEN] / 2 : rs[YELLOW] / 2;
-        int branchBuilds = resources[BLUE] < resources[RED]
-            ? rs[BLUE] : rs[RED];
 
-        printf("%d nodes, %d branches\n", nodeBuilds, branchBuilds);
+        uint_fast64_t branchStack[NUM_EDGES];
+        int branchStackSize = 0;
+        branchStack[branchStackSize++] = state->branches[state->turn];
+        /*
+        while (edgeStackSize) {
+            uint_fast64_t branches = branchStackSize[--edgeStackSize];
+            // Build nodes from here 
+            // Build another edge and push onto stack
+            // (If we haven't already build our max)
+        }
+        */
 
-        // TODO we're going to need a way to determine where we can build
+        actionCount += State_actionsFrom(
+            state->branches[state->turn],
+            openEdges, openCorners,
+          branchBuilds, nodeBuilds
+        );
     }
-
 }
 
+
+uint64_t State_actionsFrom(
+        uint_fast64_t branches,
+        uint_fast64_t openEdges, uint_fast32_t openCorners,
+        int branchBuilds, int nodeBuilds) {
+    //printf("call, branchBuilds: %d\t%x\t%x\n", branchBuilds, openEdges, branchBuilds);
+
+    struct Action action;
+    action.branches = branches;
+
+    uint64_t actions = 1llu;
+    
+    if (branchBuilds > 0) {
+        uint_fast64_t branchBits = branches;
+        while (branchBits) {
+            int branchBit = bitscan(branchBits);
+            branchBits ^= (1llu << branchBit);
+
+            int branchBuildBits = EDGE_ADJACENT_EDGES[branchBit] & openEdges;
+            while (branchBuildBits) {
+                int branchBuildBit = bitscan(branchBuildBits);
+                branchBuildBits ^= (1llu << branchBuildBit);
+
+                actions += State_actionsFrom(
+                    branches | (1llu << branchBuildBit),
+                    openEdges ^ (1llu << branchBuildBit), openCorners,
+                    branchBuilds -1, nodeBuilds
+                );
+            }
+        }
+    }
+
+    return actions;
+}
 
 void State_act(struct State *state, const struct Action *action) {
     #ifdef KELV_CHECKLEGAL
