@@ -184,7 +184,7 @@ void State_randomStart(struct State *state) {
     }
 }
 
-
+void State_deriveActions(struct State *state);
 void State_derive(struct State *state) {
     // Derive scores
     for (enum Player player = 0; player < NUM_PLAYERS; player++) {
@@ -228,296 +228,246 @@ void State_derive(struct State *state) {
         state->phase = PLAY;
     }
     */
+
+    State_deriveActions(state);
 }
 
-uint64_t State_actionsFrom(
-        uint_fast64_t branches,
-        uint_fast64_t openEdges, uint_fast32_t openCorners,
-        int branchBuilds, int nodeBuilds);
 
+void State_deriveActions(struct State *state) {
+    state->actionCount = 0;
 
-struct Action *State_actions(const struct State *state) {
-    const uint_fast8_t *resources = state->resources[state->turn];
-
-    // TODO Verify this is the max combinations of trade
-    struct Trade trades[41];
-    int tradeCount = 0;
-
-    trades[tradeCount++].active = false;
-
-    for (enum Resource in1 = 0; in1 < NUM_RESOURCES; in1++ ) {
-        for (enum Resource in2 = in1; in2 < NUM_RESOURCES; in2++ ) {
-            for (enum Resource in3 = in2; in3 < NUM_RESOURCES; in3++ ) {
-                int inResources[NUM_RESOURCES] = {0};
-                inResources[in1]++;
-                inResources[in2]++;
-                inResources[in3]++;
-                for (enum Resource r = 0; r < NUM_RESOURCES; r++) {
-                    if (inResources[r] > resources[r]) {
-                        goto next;
-                    }
-                }
-
-                for (enum Resource out = 0; out < NUM_RESOURCES; out++ ) {
-                    if (out == in1 || out == in2 || out == in3) {
-                        continue;
+    if (!state->tradeDone) {
+        for (enum Resource in1 = 0; in1 < NUM_RESOURCES; in1++ ) {
+            for (enum Resource in2 = in1; in2 < NUM_RESOURCES; in2++ ) {
+                for (enum Resource in3 = in2; in3 < NUM_RESOURCES; in3++ ) {
+                    int inResources[NUM_RESOURCES] = {0};
+                    inResources[in1]++;
+                    inResources[in2]++;
+                    inResources[in3]++;
+                    for (enum Resource r = 0; r < NUM_RESOURCES; r++) {
+                        if (inResources[r] > state->resources[state->turn][r]) {
+                            goto next;
+                        }
                     }
 
-                    trades[tradeCount].active = true;
-                    trades[tradeCount].in[0] = in1;
-                    trades[tradeCount].in[1] = in2;
-                    trades[tradeCount].in[2] = in3;
-                    trades[tradeCount].out = out;
-                    tradeCount++;
-                }
+                    for (enum Resource out = 0; out < NUM_RESOURCES; out++ ) {
+                        if (out == in1 || out == in2 || out == in3) {
+                            continue;
+                        }
 
-                next:
-                continue;
+                        state->actions[state->actionCount].type = TRADE;
+                        state->actions[state->actionCount].in[0] = in1;
+                        state->actions[state->actionCount].in[1] = in2;
+                        state->actions[state->actionCount].in[2] = in3;
+                        state->actions[state->actionCount].out = out;
+                        state->actionCount++;
+                    }
+
+                    next:
+                    continue;
+                }
             }
         }
     }
 
-    uint_fast64_t availableCorners = 0;
-    uint_fast32_t availableEdges = 0;
-    uint_fast32_t bits = state->branches[state->turn];
+    uint_fast32_t adjacentCorners = 0;
+    uint_fast64_t adjacentEdges = 0;
+    uint_fast64_t bits = state->branches[state->turn];
     while (bits) {
         int bit = bitscan(bits);
         bits ^= (1llu << bit);
-
-        availableCorners |= EDGE_ADJACENT_CORNERS[bit];
-        availableEdges |= EDGE_ADJACENT_EDGES[bit];
+ 
+        adjacentCorners |= EDGE_ADJACENT_CORNERS[bit];
+        adjacentEdges |= EDGE_ADJACENT_EDGES[bit];
     }
-    uint_fast32_t openEdges = ~state->branches[PLAYER_1] & ~state->branches[PLAYER_2];
-    availableEdges &= openEdges;
-    uint_fast64_t openCorners = ~state->nodes[PLAYER_1] & ~state->nodes[PLAYER_2];
-    availableCorners &= openCorners;
+    uint_fast64_t openEdges = ~state->branches[PLAYER_1] & ~state->branches[PLAYER_2];
+    adjacentEdges &= openEdges;
+    uint_fast32_t openCorners = ~state->nodes[PLAYER_1] & ~state->nodes[PLAYER_2];
+    adjacentCorners &= openCorners;
 
-    uint64_t actionCount = 0;
-    for (int i = 0; i < tradeCount; i++) {
-        uint_fast8_t rs[NUM_RESOURCES];
-        for (enum Resource r = 0; r < NUM_RESOURCES; r++) {
-            rs[r] = resources[r];
+    if (state->resources[state->turn][RED >= BRANCH_COST]
+            && state->resources[state->turn][BLUE] >= BRANCH_COST) {
+        bits = openEdges;
+        while (bits) {
+            int bit = bitscan(bits);
+            bits ^= (1llu << bit);
+
+            state->actions[state->actionCount].type = BRANCH;
+            state->actions[state->actionCount].location = bit;
+            state->actionCount++;
         }
-
-        if (trades[i].active) {
-            for (int j = 0; j < TRADE_NUM; j++) {
-                rs[trades[i].in[j]]--;
-            }
-            rs[trades[i].out]++;
-        }
-
-        int branchBuilds = rs[BLUE] < rs[RED]
-            ? rs[BLUE] : rs[RED];
-        int nodeBuilds = rs[GREEN] < rs[YELLOW] ?
-            rs[GREEN] / 2 : rs[YELLOW] / 2;
-
-        uint_fast64_t branchStack[NUM_EDGES];
-        int branchStackSize = 0;
-        branchStack[branchStackSize++] = state->branches[state->turn];
-        /*
-        while (edgeStackSize) {
-            uint_fast64_t branches = branchStackSize[--edgeStackSize];
-            // Build nodes from here 
-            // Build another edge and push onto stack
-            // (If we haven't already build our max)
-        }
-        */
-
-        actionCount += State_actionsFrom(
-            state->branches[state->turn],
-            openEdges, openCorners,
-          branchBuilds, nodeBuilds
-        );
     }
+
+    if (state->resources[state->turn][YELLOW >= NODE_COST]
+           && state->resources[state->turn][GREEN] >= NODE_COST) {
+        bits = openCorners;
+        while (bits) {
+            int bit = bitscan(bits);
+            bits ^= (1llu << bit);
+
+            state->actions[state->actionCount].type = NODE;
+            state->actions[state->actionCount].location = bit;
+            state->actionCount++;
+        }
+    }
+
+    state->actions[state->actionCount].type = END;
+    state->actionCount++;
 }
 
 
-uint64_t State_actionsFrom(
-        uint_fast64_t branches,
-        uint_fast64_t openEdges, uint_fast32_t openCorners,
-        int branchBuilds, int nodeBuilds) {
-    //printf("call, branchBuilds: %d\t%x\t%x\n", branchBuilds, openEdges, branchBuilds);
-
-    struct Action action;
-    action.branches = branches;
-
-    uint64_t actions = 1llu;
-    
-    if (branchBuilds > 0) {
-        uint_fast64_t branchBits = branches;
-        while (branchBits) {
-            int branchBit = bitscan(branchBits);
-            branchBits ^= (1llu << branchBit);
-
-            int branchBuildBits = EDGE_ADJACENT_EDGES[branchBit] & openEdges;
-            while (branchBuildBits) {
-                int branchBuildBit = bitscan(branchBuildBits);
-                branchBuildBits ^= (1llu << branchBuildBit);
-
-                actions += State_actionsFrom(
-                    branches | (1llu << branchBuildBit),
-                    openEdges ^ (1llu << branchBuildBit), openCorners,
-                    branchBuilds -1, nodeBuilds
-                );
-            }
-        }
-    }
-
-    return actions;
-}
-
-void State_act(struct State *state, const struct Action *action) {
-    #ifdef KELV_CHECKLEGAL
-    // TODO Checks for legality will go here
-    #endif
-
-    enum Player turn = state->turn;
-    
-    // Process trade
-    if (action->trade.active) {
-        for (int i = 0; i < TRADE_NUM; i++) {
-            state->resources[turn][action->trade.in[i]]--;
-        }
-        state->resources[turn][action->trade.out]++;
-    }
-
-    // Process branches
-    state->branches[state->turn] |= action->branches;
-    int branchCount = popcount(action->branches);
-
-    // Pay resources for branches
-    // TODO Don't pay resources in place phase
-    state->resources[state->turn][RED] -= branchCount;
-    state->resources[state->turn][BLUE] -= branchCount;
-
-    // Check for new captured regions
-    uint_fast64_t bits = action->branches;
-    bool newCapture = false;
-    while (bits) {
-        int branch = bitscan(bits);
-        bits ^= (1llu << branch);
-        for (int i = 0; i < 2; i++) {
-            int square = EDGE_ADJACENT_SQUARES[branch][i];
-            if (square < 0) break;
-            newCapture = State_updateCaptured(state, square) || newCapture;
-        }
-    }
-    if (newCapture) {
-        state->score[turn] = popcount(state->captured[turn]);
-    }
-
-    // Check for largest network changes
-    if (action->branches) {
-        int networkSize = State_largestNetworkSize(state, turn);
-        // If we've got a new largest network size
-        if (networkSize > state->largestNetworkSize) {
-            state->largestNetworkSize = networkSize;
-            // If the moving player didn't already have the largest ntwork
-            if (state->largestNetworkPlayer != turn) {
-                state->largestNetworkPlayer = turn;
-                // If the other player previously had the largest
-                // network, lower their score
-                if (state->largestNetworkPlayer == !turn) {
-                    state->score[!turn] -= LARGEST_NETWORK_SCORE;
-                }
-                // Raise current player's score
-                state->score[turn] += LARGEST_NETWORK_SCORE;
-            }
-        // If current player has tied the largest network size, and did
-        // not already have it
-        } else if (networkSize == state->largestNetworkSize
-                && turn != state->largestNetworkPlayer) {
-            // If the other player had the largest network before, they
-            // no longer have it
-            if (state->largestNetworkPlayer == !turn) {
-                state->score[!turn] -= LARGEST_NETWORK_SCORE;
-            }
-            state->largestNetworkPlayer = PLAYER_NONE;
-        }
-    }
-
-    // Process nodes
-    state->nodes[state->turn] |= action->nodes;
-    int nodeCount = popcount(action->nodes);
-
-    // Pay resources for nodes
-    // TODO Don't pay resources in place phase
-    state->resources[state->turn][YELLOW] -= nodeCount;
-    state->resources[state->turn][GREEN] -= nodeCount;
-
-    state->score[state->turn] += nodeCount;
-
-    // TODO Check for exhaustion
-    // TODO Update cache of resources/turn
-
-    // Next player's turn
-    state->turn = !turn;
-}
-
-
-void State_undo(struct State *state, const struct Action *action) {
-    // Undo turn advance
-    state->turn = !state->turn;
-    enum Player turn = state->turn;
-
-    // Undo trade
-    if (action->trade.active) {
-        for (int i = 0; i < TRADE_NUM; i++) {
-            state->resources[turn][action->trade.in[i]]++;
-        }
-        state->resources[turn][action->trade.out]--;
-    }
-
-    // Undo branches
-    // TODO Could this be subtract?
-    state->branches[turn] &= ~action->branches;
-    int branchCount = popcount(action->branches);
-
-    // Refund resources for branches
-    state->resources[turn][RED] += branchCount;
-    state->resources[turn][BLUE] += branchCount;
-
-    // Check if any squares are no longer captured
-    uint_fast64_t bits = action->branches;
-    while (bits) {
-        int branch = bitscan(bits);
-        bits ^= (1llu << branch);
-        for (int i = 0; i < 2; i++) {
-            int square = EDGE_ADJACENT_SQUARES[branch][i];
-            if (square < 0) break;
-            State_updateCaptured(state, square);
-        }
-    }
-    // TODO Can/should we make this conditional?
-    state->score[turn] = popcount(state->captured[turn]);
-
-    // Check for largest network changes
-    if (action->branches) {
-        int size1 = State_largestNetworkSize(state, PLAYER_1);
-        int size2 = State_largestNetworkSize(state, PLAYER_2);
-        if (size1 > size2) {
-            state->largestNetworkSize = size1;
-            state->largestNetworkPlayer = PLAYER_1;
-            state->score[PLAYER_1] += 2;
-        } else if (size2 > size1) {
-            state->largestNetworkSize = size2;
-            state->largestNetworkPlayer = PLAYER_2;
-            state->score[PLAYER_2] += 2;
-        } else {
-            state->largestNetworkSize = size1;
-            state->largestNetworkPlayer = PLAYER_NONE;
-        }
-    }
-
-    // Undo nodes
-    state->nodes[state->turn] &= ~action->nodes;
-    int nodeCount = popcount(action->nodes);
-
-    // Refund resources for nodes
-    state->resources[state->turn][YELLOW] += nodeCount;
-    state->resources[state->turn][GREEN] += nodeCount;
-
-    // Update score
-    // TODO Can we do this without popcounting?
-    state->score[state->turn] += popcount(state->nodes[turn]);
-}
+// void State_act(struct State *state, const struct Action *action) {
+//     #ifdef KELV_CHECKLEGAL
+//     // TODO Checks for legality will go here
+//     #endif
+// 
+//     enum Player turn = state->turn;
+//     
+//     // Process trade
+//     if (action->trade.active) {
+//         for (int i = 0; i < TRADE_NUM; i++) {
+//             state->resources[turn][action->trade.in[i]]--;
+//         }
+//         state->resources[turn][action->trade.out]++;
+//     }
+// 
+//     // Process branches
+//     state->branches[state->turn] |= action->branches;
+//     int branchCount = popcount(action->branches);
+// 
+//     // Pay resources for branches
+//     // TODO Don't pay resources in place phase
+//     state->resources[state->turn][RED] -= branchCount;
+//     state->resources[state->turn][BLUE] -= branchCount;
+// 
+//     // Check for new captured regions
+//     uint_fast64_t bits = action->branches;
+//     bool newCapture = false;
+//     while (bits) {
+//         int branch = bitscan(bits);
+//         bits ^= (1llu << branch);
+//         for (int i = 0; i < 2; i++) {
+//             int square = EDGE_ADJACENT_SQUARES[branch][i];
+//             if (square < 0) break;
+//             newCapture = State_updateCaptured(state, square) || newCapture;
+//         }
+//     }
+//     if (newCapture) {
+//         state->score[turn] = popcount(state->captured[turn]);
+//     }
+// 
+//     // Check for largest network changes
+//     if (action->branches) {
+//         int networkSize = State_largestNetworkSize(state, turn);
+//         // If we've got a new largest network size
+//         if (networkSize > state->largestNetworkSize) {
+//             state->largestNetworkSize = networkSize;
+//             // If the moving player didn't already have the largest ntwork
+//             if (state->largestNetworkPlayer != turn) {
+//                 state->largestNetworkPlayer = turn;
+//                 // If the other player previously had the largest
+//                 // network, lower their score
+//                 if (state->largestNetworkPlayer == !turn) {
+//                     state->score[!turn] -= LARGEST_NETWORK_SCORE;
+//                 }
+//                 // Raise current player's score
+//                 state->score[turn] += LARGEST_NETWORK_SCORE;
+//             }
+//         // If current player has tied the largest network size, and did
+//         // not already have it
+//         } else if (networkSize == state->largestNetworkSize
+//                 && turn != state->largestNetworkPlayer) {
+//             // If the other player had the largest network before, they
+//             // no longer have it
+//             if (state->largestNetworkPlayer == !turn) {
+//                 state->score[!turn] -= LARGEST_NETWORK_SCORE;
+//             }
+//             state->largestNetworkPlayer = PLAYER_NONE;
+//         }
+//     }
+// 
+//     // Process nodes
+//     state->nodes[state->turn] |= action->nodes;
+//     int nodeCount = popcount(action->nodes);
+// 
+//     // Pay resources for nodes
+//     // TODO Don't pay resources in place phase
+//     state->resources[state->turn][YELLOW] -= nodeCount;
+//     state->resources[state->turn][GREEN] -= nodeCount;
+// 
+//     state->score[state->turn] += nodeCount;
+// 
+//     // TODO Check for exhaustion
+//     // TODO Update cache of resources/turn
+// 
+//     // Next player's turn
+//     state->turn = !turn;
+// }
+// 
+// 
+// void State_undo(struct State *state, const struct Action *action) {
+//     // Undo turn advance
+//     state->turn = !state->turn;
+//     enum Player turn = state->turn;
+// 
+//     // Undo trade
+//     if (action->trade.active) {
+//         for (int i = 0; i < TRADE_NUM; i++) {
+//             state->resources[turn][action->trade.in[i]]++;
+//         }
+//         state->resources[turn][action->trade.out]--;
+//     }
+// 
+//     // Undo branches
+//     // TODO Could this be subtract?
+//     state->branches[turn] &= ~action->branches;
+//     int branchCount = popcount(action->branches);
+// 
+//     // Refund resources for branches
+//     state->resources[turn][RED] += branchCount;
+//     state->resources[turn][BLUE] += branchCount;
+// 
+//     // Check if any squares are no longer captured
+//     uint_fast64_t bits = action->branches;
+//     while (bits) {
+//         int branch = bitscan(bits);
+//         bits ^= (1llu << branch);
+//         for (int i = 0; i < 2; i++) {
+//             int square = EDGE_ADJACENT_SQUARES[branch][i];
+//             if (square < 0) break;
+//             State_updateCaptured(state, square);
+//         }
+//     }
+//     // TODO Can/should we make this conditional?
+//     state->score[turn] = popcount(state->captured[turn]);
+// 
+//     // Check for largest network changes
+//     if (action->branches) {
+//         int size1 = State_largestNetworkSize(state, PLAYER_1);
+//         int size2 = State_largestNetworkSize(state, PLAYER_2);
+//         if (size1 > size2) {
+//             state->largestNetworkSize = size1;
+//             state->largestNetworkPlayer = PLAYER_1;
+//             state->score[PLAYER_1] += 2;
+//         } else if (size2 > size1) {
+//             state->largestNetworkSize = size2;
+//             state->largestNetworkPlayer = PLAYER_2;
+//             state->score[PLAYER_2] += 2;
+//         } else {
+//             state->largestNetworkSize = size1;
+//             state->largestNetworkPlayer = PLAYER_NONE;
+//         }
+//     }
+// 
+//     // Undo nodes
+//     state->nodes[state->turn] &= ~action->nodes;
+//     int nodeCount = popcount(action->nodes);
+// 
+//     // Refund resources for nodes
+//     state->resources[state->turn][YELLOW] += nodeCount;
+//     state->resources[state->turn][GREEN] += nodeCount;
+// 
+//     // Update score
+//     // TODO Can we do this without popcounting?
+//     state->score[state->turn] += popcount(state->nodes[turn]);
+// }

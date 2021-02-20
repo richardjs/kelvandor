@@ -1,13 +1,13 @@
 #ifndef STATE_H
 #define STATE_H
 
+
 #include <stdbool.h>
 #include <stdint.h>
 
 
 #define popcount(x) __builtin_popcount(x)
 #define bitscan(x) __builtin_ctzl(x)
-
 
 #define NUM_PLAYERS 2
 #define NUM_RESOURCES 4
@@ -16,17 +16,35 @@
 #define NUM_CORNERS 24
 #define NUM_EDGES 36
 #define START_NODES 2
-#define TRADE_NUM 3
 #define LARGEST_NETWORK_SCORE 2
+#define TRADE_IN_NUM 3
+#define MAX_TRADE_COMBINATIONS 40
+#define MAX_ACTIONS (MAX_TRADE_COMBINATIONS + NUM_EDGES + NUM_CORNERS + 1)
+#define BRANCH_COST 1
+#define NODE_COST 2
+
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
 enum Resource {RED=0, YELLOW, BLUE, GREEN};
 enum Phase {PLACE, PLAY};
+enum ActionType {TRADE, BRANCH, NODE, END};
 
 
 struct Square {
     enum Resource resource;
     uint_fast8_t limit;
+};
+
+
+struct Action {
+    enum ActionType type;
+    
+    // Used with TRADE type
+    enum Resource in[3];
+    enum Resource out;
+
+    // Used with BRANCH and NODE type
+    uint_fast8_t location;
 };
 
 
@@ -40,6 +58,7 @@ struct State {
     uint_fast64_t branches[NUM_PLAYERS];
     uint_fast8_t resources[NUM_PLAYERS][NUM_RESOURCES];
     enum Player turn;
+    bool tradeDone;
 
     /* Derived information */
 
@@ -54,21 +73,10 @@ struct State {
 
     uint_fast8_t score[NUM_PLAYERS];
 
+    struct Action actions[MAX_ACTIONS];
+    uint_fast8_t actionCount;
+
     enum Phase phase;
-};
-
-
-struct Trade {
-    bool active;
-    enum Resource in[TRADE_NUM];
-    enum Resource out;
-};
-
-
-struct Action {
-    struct Trade trade;
-    uint_fast64_t branches;
-    uint_fast32_t nodes;
 };
 
 
@@ -80,9 +88,9 @@ void State_randomStart(struct State *state);
 
 /* Core operations */
 
-struct Action *State_actions(const struct State *state);
-void State_act(struct State *state, const struct Action *action);
-void State_undo(struct State *state, const struct Action *action);
+//struct Action *State_actions(const struct State *state);
+//void State_act(struct State *state, const struct Action *action);
+//void State_undo(struct State *state, const struct Action *action);
 
 
 /* Interface */

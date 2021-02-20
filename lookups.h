@@ -4,7 +4,7 @@
 #include "state.h"
 
 
-enum Direction{NORTH=0, SOUTH, EAST, WEST};
+enum Direction {NORTH=0, SOUTH, EAST, WEST};
 
 
 extern const int SQUARE_ADJACENT_SQUARES[NUM_SQUARES][4];
