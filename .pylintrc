@@ -10,4 +10,4 @@ disable=missing-class-docstring,
         too-few-public-methods,
         too-many-instance-attributes,
         invalid-name,
-        invalid-sequence-index
+        too-many-branches
