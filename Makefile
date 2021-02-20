@@ -7,6 +7,7 @@ all: kelvandor
 kelvandor: $(objects) main.o
 
 test: $(objects)
+	./test
 
 clean:
 	rm -f *.o
