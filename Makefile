@@ -9,9 +9,9 @@ kelvandor: $(objects) main.o
 test: $(objects)
 
 clean:
-	rm *.o
-	rm kelvandor
-	rm test
+	rm -f *.o
+	rm -f kelvandor
+	rm -f test
 
 
 # vim: set noexpandtab:
