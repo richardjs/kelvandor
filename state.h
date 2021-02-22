@@ -26,7 +26,6 @@
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
 enum Resource {RED=0, YELLOW, BLUE, GREEN};
-enum Phase {PLACE, PLAY};
 enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 
 
@@ -77,8 +76,6 @@ struct State {
 
     struct Action actions[MAX_ACTIONS];
     uint_fast8_t actionCount;
-
-    enum Phase phase;
 };
 
 
@@ -92,7 +89,7 @@ void State_randomStart(struct State *state);
 
 //struct Action *State_actions(const struct State *state);
 void State_act(struct State *state, const struct Action *action);
-//void State_undo(struct State *state, const struct Action *action);
+void State_undo(struct State *state, const struct Action *action);
 
 
 /* Interface */

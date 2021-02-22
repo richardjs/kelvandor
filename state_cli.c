@@ -64,7 +64,6 @@ void State_print(const struct State *state) {
 
 void State_printDetail(const struct State *state) {
 	State_print(state);
-	fprintf(stderr, "Phase:\t%d\n", state->phase);
 	fprintf(stderr, "Turn:\t%d\n", state->turn);
 
 	for (enum Player player = 0; player < NUM_PLAYERS; player++) {

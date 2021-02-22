@@ -138,34 +138,80 @@ int main() {
 //     State_actions(&state);
 
 
-    // Test start actions
-    State_randomStart(&state);
-    if (state.actionCount != 72) {
-        printf("Incorrect number of starting actions\n");
-    }
-    State_act(&state, &state.actions[rand() % state.actionCount]);
-    if (state.turn != PLAYER_2) {
-        printf("Wrong player turn during start places");
-    }
-    State_act(&state, &state.actions[rand() % state.actionCount]);
-    if (state.turn != PLAYER_2) {
-        printf("Wrong player turn during start places");
-    }
-    State_act(&state, &state.actions[rand() % state.actionCount]);
-    if (state.turn != PLAYER_1) {
-        printf("Wrong player turn during start places");
-    }
-    State_act(&state, &state.actions[rand() % state.actionCount]);
-    if (state.turn != PLAYER_2) {
-        printf("Wrong player turn during start places");
-    }
-    for (int i = 0; i < state.actionCount; i++) {
-        if (state.actions[i].type == START_PLACE) {
-            printf("START_PLACE move after start phase");
-            break;
+    // Test start actions and undo
+    {
+        State_randomStart(&state);
+        if (state.actionCount != 72) {
+            printf("Incorrect number of starting actions\n");
+        }
+        struct Action action1 = state.actions[rand() % state.actionCount];
+        struct State state1 = state;
+        State_act(&state, &action1);
+        if (state.turn != PLAYER_2) {
+            printf("Wrong player turn during start places");
+        }
+        struct Action action2 = state.actions[rand() % state.actionCount];
+        struct State state2 = state;
+        State_act(&state, &action2);
+        if (state.turn != PLAYER_2) {
+            printf("Wrong player turn during start places");
+        }
+        struct Action action3 = state.actions[rand() % state.actionCount];
+        struct State state3 = state;
+        State_act(&state, &action3);
+        if (state.turn != PLAYER_1) {
+            printf("Wrong player turn during start places");
+        }
+        struct Action action4 = state.actions[rand() % state.actionCount];
+        struct State state4 = state;
+        State_act(&state, &action4);
+        if (state.turn != PLAYER_2) {
+            printf("Wrong player turn during start places");
+        }
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type == START_PLACE) {
+                printf("START_PLACE move after start phase\n");
+                break;
+            }
+        }
+
+        State_undo(&state, &action4);
+        if (memcmp(&state, &state4, sizeof(struct State)) != 0) {
+           printf("Undo START_PLACE results in different state\n");
+           printf("Undone version:\n");
+           State_printDetail(&state);
+           printf("Reference version::\n");
+           State_printDetail(&state4);
+           printf("---\n");
+        }
+        State_undo(&state, &action3);
+        if (memcmp(&state, &state3, sizeof(struct State)) != 0) {
+           printf("Undo START_PLACE results in different state\n");
+           printf("Undone version:\n");
+           State_printDetail(&state);
+           printf("Reference version::\n");
+           State_printDetail(&state3);
+           printf("---\n");
+        }
+        State_undo(&state, &action2);
+        if (memcmp(&state, &state2, sizeof(struct State)) != 0) {
+           printf("Undo START_PLACE results in different state\n");
+           printf("Undone version:\n");
+           State_printDetail(&state);
+           printf("Reference version::\n");
+           State_printDetail(&state2);
+           printf("---\n");
+        }
+        State_undo(&state, &action1);
+        if (memcmp(&state, &state1, sizeof(struct State)) != 0) {
+           printf("Undo START_PLACE results in different state\n");
+           printf("Undone version:\n");
+           State_printDetail(&state);
+           printf("Reference version::\n");
+           State_printDetail(&state1);
+           printf("---\n");
         }
     }
-    State_print(&state);
 
 
     printf("Done\n");

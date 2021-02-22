@@ -332,9 +332,33 @@ void State_act(struct State *state, const struct Action *action) {
 
             if (state->turn == PLAYER_1) {
                 state->turn = PLAYER_2;
-            } else if (popcount(state->nodes[state->turn]) == START_NODES) {
+            } else if (popcount(state->nodes[PLAYER_2]) == START_NODES) {
                 state->turn = PLAYER_1;
             }
+
+            break;
+        }
+    }
+
+    State_deriveActions(state);
+}
+
+
+void State_undo(struct State *state, const struct Action *action) {
+    switch (action->type) {
+        case START_PLACE: {
+            if (state->turn == PLAYER_1) {
+                state->turn = PLAYER_2;
+            } else if (popcount(state->nodes[PLAYER_2]) != 1) {
+                state->turn = PLAYER_1;
+            }
+
+            int node = action->location & 0b11111;
+            int dir = action->location >> 6;
+            int branch = CORNER_ADJACENT_EDGES[node][dir];
+            state->nodes[state->turn] ^= (1llu << node);
+            state->branches[state->turn] ^= (1llu << branch);
+
             break;
         }
     }
