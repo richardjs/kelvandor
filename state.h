@@ -27,7 +27,7 @@
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
 enum Resource {RED=0, YELLOW, BLUE, GREEN};
 enum Phase {PLACE, PLAY};
-enum ActionType {TRADE, BRANCH, NODE, END};
+enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 
 
 struct Square {
@@ -43,7 +43,9 @@ struct Action {
     enum Resource in[3];
     enum Resource out;
 
-    // Used with BRANCH and NODE type
+    // Used with START_PLACE, BRANCH, and NODE types
+    // With START_PLACE, location indicates the placed node, and bits
+    // 6-7 indicating the direction of the accompanying edge
     uint_fast8_t location;
 };
 
@@ -89,7 +91,7 @@ void State_randomStart(struct State *state);
 /* Core operations */
 
 //struct Action *State_actions(const struct State *state);
-//void State_act(struct State *state, const struct Action *action);
+void State_act(struct State *state, const struct Action *action);
 //void State_undo(struct State *state, const struct Action *action);
 
 

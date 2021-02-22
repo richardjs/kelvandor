@@ -137,6 +137,38 @@ int main() {
 //     state.branches[0] = 1;
 //     State_actions(&state);
 
+
+    // Test start actions
+    State_randomStart(&state);
+    if (state.actionCount != 72) {
+        printf("Incorrect number of starting actions\n");
+    }
+    State_act(&state, &state.actions[rand() % state.actionCount]);
+    if (state.turn != PLAYER_2) {
+        printf("Wrong player turn during start places");
+    }
+    State_act(&state, &state.actions[rand() % state.actionCount]);
+    if (state.turn != PLAYER_2) {
+        printf("Wrong player turn during start places");
+    }
+    State_act(&state, &state.actions[rand() % state.actionCount]);
+    if (state.turn != PLAYER_1) {
+        printf("Wrong player turn during start places");
+    }
+    State_act(&state, &state.actions[rand() % state.actionCount]);
+    if (state.turn != PLAYER_2) {
+        printf("Wrong player turn during start places");
+    }
+    for (int i = 0; i < state.actionCount; i++) {
+        if (state.actions[i].type == START_PLACE) {
+            printf("START_PLACE move after start phase");
+            break;
+        }
+    }
+    State_print(&state);
+
+
     printf("Done\n");
+
     return 0;
 }   

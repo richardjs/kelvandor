@@ -160,80 +160,37 @@ int State_largestNetworkSize(const struct State *state, enum Player player) {
 }
 
 
-void State_randomStart(struct State *state) {
-    // Most fields start off at 0
-    memset(state, 0, sizeof(struct State));
+void State_deriveStartActions(struct State *state) {
+    state->actionCount = 0;
 
-    state->largestNetworkPlayer = PLAYER_NONE;
+    uint_fast32_t openEdges = ~(state->branches[PLAYER_1] | state->branches[PLAYER_2]);
+    uint_fast32_t openCorners = ~(state->nodes[PLAYER_1] | state->nodes[PLAYER_2]);
+    openCorners &= (1llu << NUM_CORNERS) - 1;
+    while(openCorners) {
+        int bit = bitscan(openCorners);
+        openCorners ^= (1llu << bit);
 
-    // Randomize the starting squares by interating through all squares
-    // and picking a random location for each. The vacant square will
-    // be at the last location.
-    for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
-        for (int limit = 1; limit <= MAX_LIMIT; limit ++){
-            // Find a place that does not already have a square. All
-            // squares but the vacant have a limit > 0.
-            int try_place;
-            do {
-                try_place = rand() % NUM_SQUARES;
-            } while (state->squares[try_place].limit > 0);
-
-            state->squares[try_place].resource = resource;
-            state->squares[try_place].limit = limit;
-        }
-    }
-}
-
-void State_deriveActions(struct State *state);
-void State_derive(struct State *state) {
-    // Derive scores
-    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-        state->score[player] = popcount(state->nodes[player]);
-    }
-
-    // Captured squares
-    for (int i = 0; i < NUM_SQUARES; i++ ) {
-        State_updateCaptured(state, i);
-        for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-            if (state->captured[player] & (1llu << i)) {
-                state->score[player]++;
-                break;
+        for (enum Direction dir = 0; dir < 4; dir++) {
+            if (CORNER_ADJACENT_EDGES[bit][dir] < 0) {
+                continue;
+            }
+            if (openEdges & (1llu << CORNER_ADJACENT_EDGES[bit][dir])) {
+                state->actions[state->actionCount].type = START_PLACE;
+                state->actions[state->actionCount].location = bit;
+                state->actions[state->actionCount].location |= (dir << 6);
+                state->actionCount++;
             }
         }
     }
-
-    // Largest network
-    state->largestNetworkSize = 0;
-    state->largestNetworkPlayer = PLAYER_NONE;
-    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-        int size = State_largestNetworkSize(state, player);
-        if (size > state->largestNetworkSize) {
-            state->largestNetworkSize = size;
-            if (state->largestNetworkPlayer != PLAYER_NONE) {
-                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
-            }
-            state->score[player] += LARGEST_NETWORK_SCORE;
-            state->largestNetworkPlayer = player;
-        } else if (size == state->largestNetworkSize) {
-            if (state->largestNetworkPlayer != PLAYER_NONE) {
-                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
-            }
-        }
-    }
-
-    /* Taking this out until it's implemented in State_act as well.
-    // Derive phase
-    state->phase = PLACE;
-    if (popcount(state->nodes[PLAYER_1]) >= START_NODES){
-        state->phase = PLAY;
-    }
-    */
-
-    State_deriveActions(state);
 }
 
 
 void State_deriveActions(struct State *state) {
+    if (popcount(state->nodes[PLAYER_1]) < 2) {
+        State_deriveStartActions(state);
+        return;
+    }
+
     state->actionCount = 0;
 
     if (!state->tradeDone) {
@@ -313,6 +270,76 @@ void State_deriveActions(struct State *state) {
 
     state->actions[state->actionCount].type = END;
     state->actionCount++;
+}
+
+
+void State_derive(struct State *state) {
+    // Derive scores
+    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+        state->score[player] = popcount(state->nodes[player]);
+    }
+
+    // Captured squares
+    for (int i = 0; i < NUM_SQUARES; i++ ) {
+        State_updateCaptured(state, i);
+        for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+            if (state->captured[player] & (1llu << i)) {
+                state->score[player]++;
+                break;
+            }
+        }
+    }
+
+    // Largest network
+    state->largestNetworkSize = 0;
+    state->largestNetworkPlayer = PLAYER_NONE;
+    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+        int size = State_largestNetworkSize(state, player);
+        if (size > state->largestNetworkSize) {
+            state->largestNetworkSize = size;
+            if (state->largestNetworkPlayer != PLAYER_NONE) {
+                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
+            }
+            state->score[player] += LARGEST_NETWORK_SCORE;
+            state->largestNetworkPlayer = player;
+        } else if (size == state->largestNetworkSize) {
+            if (state->largestNetworkPlayer != PLAYER_NONE) {
+                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
+            }
+        }
+    }
+
+    /* Taking this out until it's implemented in State_act as well.
+    // Derive phase
+    state->phase = PLACE;
+    if (popcount(state->nodes[PLAYER_1]) >= START_NODES){
+        state->phase = PLAY;
+    }
+    */
+
+    State_deriveActions(state);
+}
+
+
+void State_act(struct State *state, const struct Action *action) {
+    switch (action->type) {
+        case START_PLACE: {
+            int node = action->location & 0b11111;
+            int dir = action->location >> 6;
+            int branch = CORNER_ADJACENT_EDGES[node][dir];
+            state->nodes[state->turn] |= (1llu << node);
+            state->branches[state->turn] |= (1llu << branch);
+
+            if (state->turn == PLAYER_1) {
+                state->turn = PLAYER_2;
+            } else if (popcount(state->nodes[state->turn]) == START_NODES) {
+                state->turn = PLAYER_1;
+            }
+            break;
+        }
+    }
+
+    State_deriveActions(state);
 }
 
 
@@ -471,3 +498,28 @@ void State_deriveActions(struct State *state) {
 //     // TODO Can we do this without popcounting?
 //     state->score[state->turn] += popcount(state->nodes[turn]);
 // }
+
+
+void State_randomStart(struct State *state) {
+    // Most fields start off at 0
+    memset(state, 0, sizeof(struct State));
+
+    // Randomize the starting squares by interating through all squares
+    // and picking a random location for each. The vacant square will
+    // be at the last location.
+    for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
+        for (int limit = 1; limit <= MAX_LIMIT; limit ++){
+            // Find a place that does not already have a square. All
+            // squares but the vacant have a limit > 0.
+            int try_place;
+            do {
+                try_place = rand() % NUM_SQUARES;
+            } while (state->squares[try_place].limit > 0);
+
+            state->squares[try_place].resource = resource;
+            state->squares[try_place].limit = limit;
+        }
+    }
+
+    State_derive(state);
+}
