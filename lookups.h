@@ -13,6 +13,7 @@ extern const int CORNER_ADJACENT_EDGES[NUM_CORNERS][4];
 extern const int EDGE_ADJACENT_SQUARES[NUM_EDGES][2];
 extern const uint_fast64_t EDGE_ADJACENT_EDGES[NUM_EDGES];
 extern const uint_fast32_t EDGE_ADJACENT_CORNERS[NUM_EDGES];
+extern const int CORNER_ADJACENT_SQUARES[NUM_CORNERS][4];
 
 
 #endif

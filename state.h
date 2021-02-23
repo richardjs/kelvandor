@@ -32,6 +32,7 @@ enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 struct Square {
     enum Resource resource;
     uint_fast8_t limit;
+    bool exhausted;
 };
 
 
@@ -108,5 +109,7 @@ void State_derive(struct State *state);
 bool State_updateCaptured(struct State *state, int square);
 
 int State_largestNetworkSize(const struct State *state, enum Player player);
+
+void State_collectResources(struct State *state);
 
 #endif

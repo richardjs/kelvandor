@@ -321,6 +321,26 @@ void State_derive(struct State *state) {
 }
 
 
+void State_collectResources(struct State *state) {
+    uint_fast32_t nodeBits = state->nodes[state->turn]; 
+    while (nodeBits) {
+        int bit = bitscan(nodeBits);
+        nodeBits ^= (1llu << bit);
+
+        for (int i = 0; i < 4; i++) {
+            int sq = CORNER_ADJACENT_SQUARES[bit][i];
+            if (sq < 0) {
+                continue;
+            }
+            if (state->squares[sq].exhausted) {
+                continue;
+            }
+            state->resources[state->turn][state->squares[sq].resource]++;
+        }
+    }
+}
+
+
 void State_act(struct State *state, const struct Action *action) {
     switch (action->type) {
         case START_PLACE: {
@@ -332,9 +352,22 @@ void State_act(struct State *state, const struct Action *action) {
 
             if (state->turn == PLAYER_1) {
                 state->turn = PLAYER_2;
+                if (state->nodes[PLAYER_2] == 2) {
+                    State_collectResources(state);
+                }
             } else if (popcount(state->nodes[PLAYER_2]) == START_NODES) {
                 state->turn = PLAYER_1;
             }
+
+            break;
+        }
+
+        case (TRADE): {
+            for (int i = 0; i < TRADE_IN_NUM; i++ ) {
+                state->resources[state->turn][action->in[i]]--;
+                state->resources[state->turn][action->out]++;
+            }
+            state->tradeDone = true;
 
             break;
         }
@@ -351,6 +384,9 @@ void State_undo(struct State *state, const struct Action *action) {
                 state->turn = PLAYER_2;
             } else if (popcount(state->nodes[PLAYER_2]) != 1) {
                 state->turn = PLAYER_1;
+                for (enum Resource res; res < NUM_RESOURCES; res++) {
+                    state->resources[PLAYER_2][res] = 0;
+                }
             }
 
             int node = action->location & 0b11111;
@@ -364,6 +400,30 @@ void State_undo(struct State *state, const struct Action *action) {
     }
 
     State_deriveActions(state);
+}
+
+
+void State_randomStart(struct State *state) { // Most fields start off at 0
+    memset(state, 0, sizeof(struct State));
+
+    // Randomize the starting squares by interating through all squares
+    // and picking a random location for each. The vacant square will
+    // be at the last location.
+    for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
+        for (int limit = 1; limit <= MAX_LIMIT; limit ++){
+            // Find a place that does not already have a square. All
+            // squares but the vacant have a limit > 0.
+            int try_place;
+            do {
+                try_place = rand() % NUM_SQUARES;
+            } while (state->squares[try_place].limit > 0);
+
+            state->squares[try_place].resource = resource;
+            state->squares[try_place].limit = limit;
+        }
+    }
+
+    State_derive(state);
 }
 
 
@@ -522,28 +582,3 @@ void State_undo(struct State *state, const struct Action *action) {
 //     // TODO Can we do this without popcounting?
 //     state->score[state->turn] += popcount(state->nodes[turn]);
 // }
-
-
-void State_randomStart(struct State *state) {
-    // Most fields start off at 0
-    memset(state, 0, sizeof(struct State));
-
-    // Randomize the starting squares by interating through all squares
-    // and picking a random location for each. The vacant square will
-    // be at the last location.
-    for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
-        for (int limit = 1; limit <= MAX_LIMIT; limit ++){
-            // Find a place that does not already have a square. All
-            // squares but the vacant have a limit > 0.
-            int try_place;
-            do {
-                try_place = rand() % NUM_SQUARES;
-            } while (state->squares[try_place].limit > 0);
-
-            state->squares[try_place].resource = resource;
-            state->squares[try_place].limit = limit;
-        }
-    }
-
-    State_derive(state);
-}
