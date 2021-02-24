@@ -85,6 +85,7 @@ bool State_updateCaptured(struct State *state, int square) {
     // mark them all as captured by player
     for (int i = 0; i < NUM_SQUARES; i++) {
         if (crumbs[i]) {
+            state->squares[i].captor = player;
             state->captured[player] |= (1llu << i);
         }
     }
@@ -164,6 +165,7 @@ void State_deriveStartActions(struct State *state) {
     state->actionCount = 0;
 
     uint_fast32_t openEdges = ~(state->branches[PLAYER_1] | state->branches[PLAYER_2]);
+    openEdges &= (1llu << NUM_EDGES) - 1;
     uint_fast32_t openCorners = ~(state->nodes[PLAYER_1] | state->nodes[PLAYER_2]);
     openCorners &= (1llu << NUM_CORNERS) - 1;
     while(openCorners) {
@@ -238,8 +240,10 @@ void State_deriveActions(struct State *state) {
         adjacentEdges |= EDGE_ADJACENT_EDGES[bit];
     }
     uint_fast64_t openEdges = ~state->branches[PLAYER_1] & ~state->branches[PLAYER_2];
+    openEdges &= (1llu << NUM_EDGES) - 1;
     adjacentEdges &= openEdges;
     uint_fast32_t openCorners = ~state->nodes[PLAYER_1] & ~state->nodes[PLAYER_2];
+    openCorners &= (1llu << NUM_CORNERS) - 1;
     adjacentCorners &= openCorners;
 
     if (state->resources[state->turn][RED >= BRANCH_COST]
@@ -332,7 +336,7 @@ void State_collectResources(struct State *state) {
             if (sq < 0) {
                 continue;
             }
-            if (state->squares[sq].exhausted) {
+            if (state->squares[sq].remainingCapacity <= 0) {
                 continue;
             }
             state->resources[state->turn][state->squares[sq].resource]++;
@@ -362,12 +366,28 @@ void State_act(struct State *state, const struct Action *action) {
             break;
         }
 
-        case (TRADE): {
+        case TRADE: {
             for (int i = 0; i < TRADE_IN_NUM; i++ ) {
                 state->resources[state->turn][action->in[i]]--;
                 state->resources[state->turn][action->out]++;
             }
             state->tradeDone = true;
+
+            break;
+        }
+
+        case BRANCH: {
+            state->resources[state->turn][RED]--;
+            state->resources[state->turn][BLUE]--;
+            state->branches[state->turn] |= (1llu << action->location);
+
+            bool newCapture = false;
+            for (int i = 0; i < 2; i++) {
+                int square = EDGE_ADJACENT_SQUARES[action->location][i];
+                if (square < 0) break;
+                State_updateCaptured(state, square);
+            }
+            // TODO update score if we've got a capture
 
             break;
         }
@@ -384,7 +404,7 @@ void State_undo(struct State *state, const struct Action *action) {
                 state->turn = PLAYER_2;
             } else if (popcount(state->nodes[PLAYER_2]) != 1) {
                 state->turn = PLAYER_1;
-                for (enum Resource res; res < NUM_RESOURCES; res++) {
+                for (enum Resource res = 0; res < NUM_RESOURCES; res++) {
                     state->resources[PLAYER_2][res] = 0;
                 }
             }
@@ -395,6 +415,21 @@ void State_undo(struct State *state, const struct Action *action) {
             state->nodes[state->turn] ^= (1llu << node);
             state->branches[state->turn] ^= (1llu << branch);
 
+            break;
+        }
+
+        // TODO undo trade
+
+        case BRANCH: {
+            state->resources[state->turn][RED]++;
+            state->resources[state->turn][BLUE]++;
+            state->branches[state->turn] ^= (1llu << action->location);
+
+            for (int i = 0; i < 2; i++) {
+                int square = EDGE_ADJACENT_SQUARES[action->location][i];
+                if (square < 0) break;
+                State_updateCaptured(state, square);
+            }
             break;
         }
     }
@@ -416,10 +451,11 @@ void State_randomStart(struct State *state) { // Most fields start off at 0
             int try_place;
             do {
                 try_place = rand() % NUM_SQUARES;
-            } while (state->squares[try_place].limit > 0);
+            } while (state->squares[try_place].remainingCapacity > 0);
 
             state->squares[try_place].resource = resource;
-            state->squares[try_place].limit = limit;
+            state->squares[try_place].remainingCapacity = limit;
+            state->squares[try_place].captor = PLAYER_NONE;
         }
     }
 

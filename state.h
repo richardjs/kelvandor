@@ -31,8 +31,8 @@ enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 
 struct Square {
     enum Resource resource;
-    uint_fast8_t limit;
-    bool exhausted;
+    uint_fast8_t remainingCapacity;
+    enum Player captor;
 };
 
 
@@ -105,6 +105,7 @@ void State_printDetail(const struct State *state);
 // Calculate the derived information from code information. Useful when
 // loading a state or making changes outside of normal operations.
 void State_derive(struct State *state);
+void State_deriveActions(struct State *state);
 
 bool State_updateCaptured(struct State *state, int square);
 

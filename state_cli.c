@@ -41,7 +41,7 @@ void State_print(const struct State *state) {
     char lc[NUM_SQUARES];
     for (int i = 0; i < NUM_SQUARES; i++) {
         rc[i] = RESOURCE_CHARS[state->squares[i].resource];
-        lc[i] = '0' + state->squares[i].limit;
+        lc[i] = '0' + state->squares[i].remainingCapacity;
         if (lc[i] == '0') {
             rc[i] = ' ';
             lc[i] = ' ';

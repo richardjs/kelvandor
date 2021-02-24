@@ -175,12 +175,12 @@ int main() {
         }
         State_undo(&state, &action1);
         if (memcmp(&state, &state1, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE results in different state\n");
-           printf("Undone version:\n");
-           State_printDetail(&state);
-           printf("Reference version::\n");
-           State_printDetail(&state1);
-           printf("---\n");
+            printf("Undo START_PLACE results in different state\n");
+            printf("Undone version:\n");
+            State_printDetail(&state);
+            printf("Reference version::\n");
+            State_printDetail(&state1);
+            printf("---\n");
         }
     }
 
@@ -191,7 +191,7 @@ int main() {
         state.nodes[PLAYER_1] = 0b11;
         state.nodes[PLAYER_2] = 0b11<<22;
         state.squares[0].resource = RED;
-        state.squares[0].limit = 3;
+        state.squares[0].remainingCapacity = 3;
         State_collectResources(&state);
         if (state.resources[PLAYER_1][RED] != 2) {
             printf("Basic collect resources test failed");
@@ -219,6 +219,32 @@ int main() {
             }
             if (fail) {
                 break;
+            }
+        }
+    }
+
+
+    // Test BRANCH action undo
+    {
+        State_pastStart(&state);
+        state.resources[PLAYER_2][RED] = 1;
+        state.resources[PLAYER_2][BLUE] = 1;
+        State_deriveActions(&state);
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type == BRANCH) {
+                struct State test = state;
+                struct Action action = test.actions[i];
+                State_act(&test, &action);
+                State_undo(&test, &action);
+                if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+                    printf("Branch undo results in different state\n");
+                    printf("Undone version:\n");
+                    State_printDetail(&test);
+                    printf("Reference version::\n");
+                    State_printDetail(&state);
+                    printf("---\n");
+                    break;
+                }
             }
         }
     }
