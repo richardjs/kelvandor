@@ -11,7 +11,7 @@ void State_derive(struct State *state);
 void State_deriveActions(struct State *state);
 bool State_updateCaptured(struct State *state, int square);
 int State_largestNetworkSize(const struct State *state, enum Player player);
-void State_collectResources(struct State *state);
+void State_collectResources(struct State *state, int sign);
 
 
 void State_pastStart(struct State *state) {
@@ -199,9 +199,9 @@ int main() {
         state.nodes[PLAYER_2] = 0b11<<22;
         state.squares[0].resource = RED;
         state.squares[0].remaining = 3;
-        State_collectResources(&state);
+        State_collectResources(&state, 1);
         if (state.resources[PLAYER_1][RED] != 2) {
-            printf("Basic collect resources test failed");
+            printf("Basic collect resources test failed\n");
         }
     }
 
@@ -302,6 +302,29 @@ int main() {
             State_undo(&test, &action);
             if (memcmp(&state, &test, sizeof(struct State)) != 0) {
                 printf("Node undo results in different state\n");
+                printf("Undone version:\n");
+                State_printDetail(&test);
+                printf("Reference version::\n");
+                State_printDetail(&state);
+                printf("---\n");
+                break;
+            }
+        }
+    }
+
+
+    // Test END action undo
+    {
+        State_pastStart(&state);
+
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type != END) continue;
+            struct State test = state;
+            struct Action action = test.actions[i];
+            State_act(&test, &test.actions[i]);
+            State_undo(&test, &action);
+            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+                printf("End undo results in different state\n");
                 printf("Undone version:\n");
                 State_printDetail(&test);
                 printf("Reference version::\n");

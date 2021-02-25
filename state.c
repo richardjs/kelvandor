@@ -329,7 +329,7 @@ void State_derive(struct State *state) {
 }
 
 
-void State_collectResources(struct State *state) {
+void State_collectResources(struct State *state, int sign) {
     uint_fast32_t nodeBits = state->nodes[state->turn]; 
     while (nodeBits) {
         int bit = bitscan(nodeBits);
@@ -343,7 +343,7 @@ void State_collectResources(struct State *state) {
             if (state->squares[sq].remaining <= 0) {
                 continue;
             }
-            state->resources[state->turn][state->squares[sq].resource]++;
+            state->resources[state->turn][state->squares[sq].resource] += sign;
         }
     }
 }
@@ -361,7 +361,7 @@ void State_act(struct State *state, const struct Action *action) {
             if (state->turn == PLAYER_1) {
                 state->turn = PLAYER_2;
                 if (popcount(state->nodes[PLAYER_2]) == 2) {
-                    State_collectResources(state);
+                    State_collectResources(state, 1);
                 }
             } else if (popcount(state->nodes[PLAYER_2]) == START_NODES) {
                 state->turn = PLAYER_1;
@@ -404,6 +404,15 @@ void State_act(struct State *state, const struct Action *action) {
                 state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining--;
             }
             // TODO update score
+
+            break;
+        }
+
+        case END: {
+            // TODO check for longest network here?
+
+            state->turn = !state->turn;
+            State_collectResources(state, 1);
 
             break;
         }
@@ -466,6 +475,14 @@ void State_undo(struct State *state, const struct Action *action) {
                 state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining++;
             }
             // TODO update score
+
+            break;
+        }
+
+        case END: {
+            State_collectResources(state, -1);
+            // TODO check for longest network here?
+            state->turn = !state->turn;
 
             break;
         }
