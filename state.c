@@ -178,12 +178,16 @@ void State_deriveStartActions(struct State *state) {
             }
             if (openEdges & (1llu << CORNER_ADJACENT_EDGES[bit][dir])) {
                 state->actions[state->actionCount].type = START_PLACE;
-                state->actions[state->actionCount].location = bit;
-                state->actions[state->actionCount].location |= (dir << 6);
+                state->actions[state->actionCount].data = bit;
+                state->actions[state->actionCount].data |= (dir << 6);
                 state->actionCount++;
             }
         }
     }
+
+    // TODO only do this with test flag
+    memset(&state->actions[state->actionCount], 0,
+        sizeof(struct Action) * (MAX_ACTIONS - state->actionCount));
 }
 
 
@@ -215,10 +219,10 @@ void State_deriveActions(struct State *state) {
                         }
 
                         state->actions[state->actionCount].type = TRADE;
-                        state->actions[state->actionCount].in[0] = in1;
-                        state->actions[state->actionCount].in[1] = in2;
-                        state->actions[state->actionCount].in[2] = in3;
-                        state->actions[state->actionCount].out = out;
+                        state->actions[state->actionCount].data = in1 << 0;
+                        state->actions[state->actionCount].data |= in2 << 2;
+                        state->actions[state->actionCount].data |= in3 << 4;
+                        state->actions[state->actionCount].data |= out << 6;
                         state->actionCount++;
                     }
 
@@ -254,7 +258,7 @@ void State_deriveActions(struct State *state) {
             bits ^= (1llu << bit);
 
             state->actions[state->actionCount].type = BRANCH;
-            state->actions[state->actionCount].location = bit;
+            state->actions[state->actionCount].data = bit;
             state->actionCount++;
         }
     }
@@ -267,13 +271,21 @@ void State_deriveActions(struct State *state) {
             bits ^= (1llu << bit);
 
             state->actions[state->actionCount].type = NODE;
-            state->actions[state->actionCount].location = bit;
+            state->actions[state->actionCount].data = bit;
             state->actionCount++;
         }
     }
 
     state->actions[state->actionCount].type = END;
+
+    // TODO only do this with test flag
+    state->actions[state->actionCount].data = 0;
+
     state->actionCount++;
+
+    // TODO only do this with test flag
+    memset(&state->actions[state->actionCount], 0,
+        sizeof(struct Action) * (MAX_ACTIONS - state->actionCount));
 }
 
 
@@ -348,15 +360,15 @@ void State_collectResources(struct State *state) {
 void State_act(struct State *state, const struct Action *action) {
     switch (action->type) {
         case START_PLACE: {
-            int node = action->location & 0b11111;
-            int dir = action->location >> 6;
+            int node = action->data & 0b11111;
+            int dir = action->data >> 6;
             int branch = CORNER_ADJACENT_EDGES[node][dir];
             state->nodes[state->turn] |= (1llu << node);
             state->branches[state->turn] |= (1llu << branch);
 
             if (state->turn == PLAYER_1) {
                 state->turn = PLAYER_2;
-                if (state->nodes[PLAYER_2] == 2) {
+                if (popcount(state->nodes[PLAYER_2]) == 2) {
                     State_collectResources(state);
                 }
             } else if (popcount(state->nodes[PLAYER_2]) == START_NODES) {
@@ -367,10 +379,10 @@ void State_act(struct State *state, const struct Action *action) {
         }
 
         case TRADE: {
-            for (int i = 0; i < TRADE_IN_NUM; i++ ) {
-                state->resources[state->turn][action->in[i]]--;
-                state->resources[state->turn][action->out]++;
-            }
+            state->resources[state->turn][(action->data >> 0)  & 0b11]--;
+            state->resources[state->turn][(action->data >> 2)  & 0b11]--;
+            state->resources[state->turn][(action->data >> 4)  & 0b11]--;
+            state->resources[state->turn][(action->data >> 6)  & 0b11]++;
             state->tradeDone = true;
 
             break;
@@ -379,11 +391,10 @@ void State_act(struct State *state, const struct Action *action) {
         case BRANCH: {
             state->resources[state->turn][RED]--;
             state->resources[state->turn][BLUE]--;
-            state->branches[state->turn] |= (1llu << action->location);
+            state->branches[state->turn] |= (1llu << action->data);
 
-            bool newCapture = false;
             for (int i = 0; i < 2; i++) {
-                int square = EDGE_ADJACENT_SQUARES[action->location][i];
+                int square = EDGE_ADJACENT_SQUARES[action->data][i];
                 if (square < 0) break;
                 State_updateCaptured(state, square);
             }
@@ -409,8 +420,8 @@ void State_undo(struct State *state, const struct Action *action) {
                 }
             }
 
-            int node = action->location & 0b11111;
-            int dir = action->location >> 6;
+            int node = action->data & 0b11111;
+            int dir = action->data >> 6;
             int branch = CORNER_ADJACENT_EDGES[node][dir];
             state->nodes[state->turn] ^= (1llu << node);
             state->branches[state->turn] ^= (1llu << branch);
@@ -418,15 +429,23 @@ void State_undo(struct State *state, const struct Action *action) {
             break;
         }
 
-        // TODO undo trade
+        case TRADE: {
+            state->resources[state->turn][(action->data >> 0)  & 0b11]++;
+            state->resources[state->turn][(action->data >> 2)  & 0b11]++;
+            state->resources[state->turn][(action->data >> 4)  & 0b11]++;
+            state->resources[state->turn][(action->data >> 6)  & 0b11]--;
+            state->tradeDone = false;
+
+            break;
+        }
 
         case BRANCH: {
             state->resources[state->turn][RED]++;
             state->resources[state->turn][BLUE]++;
-            state->branches[state->turn] ^= (1llu << action->location);
+            state->branches[state->turn] ^= (1llu << action->data);
 
             for (int i = 0; i < 2; i++) {
-                int square = EDGE_ADJACENT_SQUARES[action->location][i];
+                int square = EDGE_ADJACENT_SQUARES[action->data][i];
                 if (square < 0) break;
                 State_updateCaptured(state, square);
             }
@@ -461,6 +480,20 @@ void State_randomStart(struct State *state) { // Most fields start off at 0
 
     State_derive(state);
 }
+
+
+//bool State_equal(const struct State *state, const struct State *other) {
+//    for (int i = 0; i < NUM_SQUARES; i++) {
+//        if (state->squares[i].resource != other->squares[i].resource) return false;
+//        if (state->squares[i].remainingCapacity != other->squares[i].remainingCapacity) return false;
+//        if (state->squares[i].captor != other->squares[i].captor) return false;
+//    }
+//
+//    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+//        if (state->nodes[player] != other->nodes[player]) return false;
+//        if (state->branches[player] != other->branches[player]) return false;
+//    }
+//}
 
 
 // void State_act(struct State *state, const struct Action *action) {

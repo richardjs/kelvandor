@@ -148,7 +148,7 @@ int main() {
 
         State_undo(&state, &action4);
         if (memcmp(&state, &state4, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE results in different state\n");
+           printf("Undo START_PLACE 4 results in different state\n");
            printf("Undone version:\n");
            State_printDetail(&state);
            printf("Reference version::\n");
@@ -157,7 +157,7 @@ int main() {
         }
         State_undo(&state, &action3);
         if (memcmp(&state, &state3, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE results in different state\n");
+           printf("Undo START_PLACE 3 results in different state\n");
            printf("Undone version:\n");
            State_printDetail(&state);
            printf("Reference version::\n");
@@ -166,7 +166,7 @@ int main() {
         }
         State_undo(&state, &action2);
         if (memcmp(&state, &state2, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE results in different state\n");
+           printf("Undo START_PLACE 2 results in different state\n");
            printf("Undone version:\n");
            State_printDetail(&state);
            printf("Reference version::\n");
@@ -175,7 +175,7 @@ int main() {
         }
         State_undo(&state, &action1);
         if (memcmp(&state, &state1, sizeof(struct State)) != 0) {
-            printf("Undo START_PLACE results in different state\n");
+            printf("Undo START_PLACE 1 results in different state\n");
             printf("Undone version:\n");
             State_printDetail(&state);
             printf("Reference version::\n");
@@ -245,6 +245,30 @@ int main() {
                     printf("---\n");
                     break;
                 }
+            }
+        }
+    }
+
+
+    // Test TRADE action undo
+    {
+        State_pastStart(&state);
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type != TRADE) {
+                continue;
+            }
+            struct State test = state;
+            struct Action action = test.actions[i];
+            State_act(&test, &test.actions[i]);
+            State_undo(&test, &action);
+            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+                printf("Trade undo results in different state\n");
+                printf("Undone version:\n");
+                State_printDetail(&test);
+                printf("Reference version::\n");
+                State_printDetail(&state);
+                printf("---\n");
+                break;
             }
         }
     }

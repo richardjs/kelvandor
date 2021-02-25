@@ -65,6 +65,9 @@ void State_print(const struct State *state) {
 void State_printDetail(const struct State *state) {
 	State_print(state);
 	fprintf(stderr, "Turn:\t%d\n", state->turn);
+    fprintf(stderr, "Action count: %d\t", state->actionCount);
+    fprintf(stderr, "Trade done: %d\t", state->tradeDone);
+    fprintf(stderr, "\n");
 
 	for (enum Player player = 0; player < NUM_PLAYERS; player++) {
 		fprintf(stderr, "Player %d:", player);
@@ -73,9 +76,8 @@ void State_printDetail(const struct State *state) {
 		fprintf(stderr, "\tCaptured:\t%x\n", state->captured[player]);
 
 		for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
-		fprintf(stderr, "\tResource %d: %d (+%d)",
-			resource, state->resources[player][resource],
-			state->income[player][resource]);
+            fprintf(stderr, "\tResource %d: %d",
+                resource, state->resources[player][resource]);
 		}
 		fprintf(stderr, "\n");
 	}

@@ -39,23 +39,17 @@ struct Square {
 struct Action {
     enum ActionType type;
     
-    // Used with TRADE type
-    enum Resource in[3];
-    enum Resource out;
-
     // Used with START_PLACE, BRANCH, and NODE types
     // With START_PLACE, location indicates the placed node, and bits
     // 6-7 indicating the direction of the accompanying edge
-    uint_fast8_t location;
+    //uint_fast8_t location;
+    uint_fast8_t data;
 };
 
 
 struct State {
-    /* Static information */
-    struct Square squares[NUM_SQUARES];
-
     /* Core information */
-
+    struct Square squares[NUM_SQUARES];
     uint_fast32_t nodes[NUM_PLAYERS];
     uint_fast64_t branches[NUM_PLAYERS];
     uint_fast8_t resources[NUM_PLAYERS][NUM_RESOURCES];
@@ -63,9 +57,6 @@ struct State {
     bool tradeDone;
 
     /* Derived information */
-
-    // Each player's resources-per-turn income
-    uint_fast8_t income[NUM_PLAYERS][NUM_RESOURCES];
 
     // What squares each player has captured
     uint_fast8_t captured[NUM_PLAYERS];
