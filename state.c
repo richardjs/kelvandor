@@ -325,14 +325,6 @@ void State_derive(struct State *state) {
         }
     }
 
-    /* Taking this out until it's implemented in State_act as well.
-    // Derive phase
-    state->phase = PLACE;
-    if (popcount(state->nodes[PLAYER_1]) >= START_NODES){
-        state->phase = PLAY;
-    }
-    */
-
     State_deriveActions(state);
 }
 
@@ -348,7 +340,7 @@ void State_collectResources(struct State *state) {
             if (sq < 0) {
                 continue;
             }
-            if (state->squares[sq].remainingCapacity <= 0) {
+            if (state->squares[sq].remaining <= 0) {
                 continue;
             }
             state->resources[state->turn][state->squares[sq].resource]++;
@@ -402,6 +394,19 @@ void State_act(struct State *state, const struct Action *action) {
 
             break;
         }
+
+        case NODE: {
+            state->resources[state->turn][YELLOW] -= 2;
+            state->resources[state->turn][GREEN] -= 2;
+            state->nodes[state->turn] |= (1llu << action->data);
+
+            for (int i = 0; CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
+                state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining--;
+            }
+            // TODO update score
+
+            break;
+        }
     }
 
     State_deriveActions(state);
@@ -451,11 +456,23 @@ void State_undo(struct State *state, const struct Action *action) {
             }
             break;
         }
+
+        case NODE: {
+            state->resources[state->turn][YELLOW] += 2;
+            state->resources[state->turn][GREEN] += 2;
+            state->nodes[state->turn] ^= (1llu << action->data);
+
+            for (int i = 0; CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
+                state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining++;
+            }
+            // TODO update score
+
+            break;
+        }
     }
 
     State_deriveActions(state);
 }
-
 
 void State_randomStart(struct State *state) { // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
@@ -470,10 +487,11 @@ void State_randomStart(struct State *state) { // Most fields start off at 0
             int try_place;
             do {
                 try_place = rand() % NUM_SQUARES;
-            } while (state->squares[try_place].remainingCapacity > 0);
+            } while (state->squares[try_place].remaining > 0);
 
             state->squares[try_place].resource = resource;
-            state->squares[try_place].remainingCapacity = limit;
+            state->squares[try_place].limit = limit;
+            state->squares[try_place].remaining = limit;
             state->squares[try_place].captor = PLAYER_NONE;
         }
     }
@@ -485,7 +503,7 @@ void State_randomStart(struct State *state) { // Most fields start off at 0
 //bool State_equal(const struct State *state, const struct State *other) {
 //    for (int i = 0; i < NUM_SQUARES; i++) {
 //        if (state->squares[i].resource != other->squares[i].resource) return false;
-//        if (state->squares[i].remainingCapacity != other->squares[i].remainingCapacity) return false;
+//        if (state->squares[i].remaining != other->squares[i].remaining) return false;
 //        if (state->squares[i].captor != other->squares[i].captor) return false;
 //    }
 //

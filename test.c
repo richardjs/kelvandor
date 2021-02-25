@@ -191,7 +191,7 @@ int main() {
         state.nodes[PLAYER_1] = 0b11;
         state.nodes[PLAYER_2] = 0b11<<22;
         state.squares[0].resource = RED;
-        state.squares[0].remainingCapacity = 3;
+        state.squares[0].remaining = 3;
         State_collectResources(&state);
         if (state.resources[PLAYER_1][RED] != 2) {
             printf("Basic collect resources test failed");
@@ -263,6 +263,38 @@ int main() {
             State_undo(&test, &action);
             if (memcmp(&state, &test, sizeof(struct State)) != 0) {
                 printf("Trade undo results in different state\n");
+                printf("Undone version:\n");
+                State_printDetail(&test);
+                printf("Reference version::\n");
+                State_printDetail(&state);
+                printf("---\n");
+                break;
+            }
+        }
+    }
+
+
+    // Test NODE action undo
+    {
+        bool foundNodeAction = false;
+        while (!foundNodeAction) {
+            State_pastStart(&state);
+            for (int i = 0; i < state.actionCount; i++) {
+                if (state.actions[i].type == NODE) {
+                    foundNodeAction = true;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type != NODE) continue;
+            struct State test = state;
+            struct Action action = test.actions[i];
+            State_act(&test, &test.actions[i]);
+            State_undo(&test, &action);
+            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+                printf("Node undo results in different state\n");
                 printf("Undone version:\n");
                 State_printDetail(&test);
                 printf("Reference version::\n");

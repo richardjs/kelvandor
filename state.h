@@ -31,7 +31,8 @@ enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 
 struct Square {
     enum Resource resource;
-    uint_fast8_t remainingCapacity;
+    uint_fast8_t limit;
+    uint_fast8_t remaining;
     enum Player captor;
 };
 
