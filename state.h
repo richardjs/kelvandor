@@ -92,17 +92,4 @@ void State_print(const struct State *state);
 void State_printDetail(const struct State *state);
 
 
-/* Internal */
-
-// Calculate the derived information from code information. Useful when
-// loading a state or making changes outside of normal operations.
-void State_derive(struct State *state);
-void State_deriveActions(struct State *state);
-
-bool State_updateCaptured(struct State *state, int square);
-
-int State_largestNetworkSize(const struct State *state, enum Player player);
-
-void State_collectResources(struct State *state);
-
 #endif

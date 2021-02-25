@@ -7,6 +7,13 @@
 #include <time.h>
 
 
+void State_derive(struct State *state);
+void State_deriveActions(struct State *state);
+bool State_updateCaptured(struct State *state, int square);
+int State_largestNetworkSize(const struct State *state, enum Player player);
+void State_collectResources(struct State *state);
+
+
 void State_pastStart(struct State *state) {
     State_randomStart(state);
     while (state->actions[0].type == START_PLACE) {
