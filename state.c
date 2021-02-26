@@ -64,7 +64,7 @@ bool State_updateCaptured(struct State *state, int square) {
             // there's another square that may be part of a larger
             // region
             // (This is the branch that continues the search)
-            } else if (SQUARE_ADJACENT_SQUARES[sq][dir] > 0) {
+            } else if (SQUARE_ADJACENT_SQUARES[sq][dir] >= 0) {
                 int adjacent = SQUARE_ADJACENT_SQUARES[sq][dir];
                 if (!crumbs[adjacent]) {
                     stack[size++] = adjacent;
@@ -78,15 +78,22 @@ bool State_updateCaptured(struct State *state, int square) {
         }
     }
 
-    // TODO Add blocks to branches being built by opponent within
-    // captured region
-
     // If we've gotten here, the searched squares are a captured region;
     // mark them all as captured by player
     for (int i = 0; i < NUM_SQUARES; i++) {
         if (crumbs[i]) {
             state->squares[i].captor = player;
             state->captured[player] |= (1llu << i);
+
+            for (enum Direction dir = 0; dir < 4; dir++) {
+                int adjacent = SQUARE_ADJACENT_SQUARES[i][dir];
+                if (adjacent < 0) {
+                    continue;
+                }
+                if (crumbs[adjacent]) {
+                    state->blocked[!player] |= (1llu << SQUARE_ADJACENT_BRANCHES[i][dir]);
+                }
+            }
         }
     }
 
@@ -243,7 +250,7 @@ void State_deriveActions(struct State *state) {
         adjacentCorners |= EDGE_ADJACENT_CORNERS[bit];
         adjacentEdges |= EDGE_ADJACENT_EDGES[bit];
     }
-    uint_fast64_t openEdges = ~state->branches[PLAYER_1] & ~state->branches[PLAYER_2];
+    uint_fast64_t openEdges = ~state->branches[PLAYER_1] & ~state->branches[PLAYER_2] & ~state->blocked[state->turn];
     openEdges &= (1llu << NUM_EDGES) - 1;
     adjacentEdges &= openEdges;
     uint_fast32_t openCorners = ~state->nodes[PLAYER_1] & ~state->nodes[PLAYER_2];
@@ -515,20 +522,6 @@ void State_randomStart(struct State *state) { // Most fields start off at 0
 
     State_derive(state);
 }
-
-
-//bool State_equal(const struct State *state, const struct State *other) {
-//    for (int i = 0; i < NUM_SQUARES; i++) {
-//        if (state->squares[i].resource != other->squares[i].resource) return false;
-//        if (state->squares[i].remaining != other->squares[i].remaining) return false;
-//        if (state->squares[i].captor != other->squares[i].captor) return false;
-//    }
-//
-//    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-//        if (state->nodes[player] != other->nodes[player]) return false;
-//        if (state->branches[player] != other->branches[player]) return false;
-//    }
-//}
 
 
 // void State_act(struct State *state, const struct Action *action) {

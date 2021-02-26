@@ -61,6 +61,7 @@ struct State {
 
     // What squares each player has captured
     uint_fast8_t captured[NUM_PLAYERS];
+    uint_fast64_t blocked[NUM_PLAYERS];
 
     uint_fast8_t largestNetworkSize;
     enum Player largestNetworkPlayer;

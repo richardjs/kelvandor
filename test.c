@@ -336,7 +336,30 @@ int main() {
     }
 
 
-    printf("Done\n");
+    // Test captured region build blocking
+    {
+        State_randomStart(&state);
+        state.nodes[PLAYER_1] = 0b1000000001;
+        state.nodes[PLAYER_2] = 0b0100000100;
+        state.branches[PLAYER_1] = 0b1000110000111;
+        state.branches[PLAYER_2] = 0b0100001001000;
+        state.turn = PLAYER_2;
+        state.resources[PLAYER_2][RED] = 1;
+        state.resources[PLAYER_2][BLUE] = 1;
+        State_derive(&state);
 
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type != BRANCH) {
+                continue;
+            }
+            if (state.actions[i].data == 4) {
+                printf("Build possible in opponent-captured region\n");
+                State_printDetail(&state);
+            }
+        }
+    }
+
+
+    printf("Done\n");
     return 0;
 }   

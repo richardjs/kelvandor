@@ -73,7 +73,8 @@ void State_printDetail(const struct State *state) {
 		fprintf(stderr, "Player %d:", player);
 		fprintf(stderr, "\tScore:\t%d", state->score[player]);
 		fprintf(stderr, "\tNodes:\t%d", popcount(state->nodes[player]));
-		fprintf(stderr, "\tCaptured:\t%x\n", state->captured[player]);
+		fprintf(stderr, "\tCaptured:\t%x", state->captured[player]);
+		fprintf(stderr, "\tBlocked:\t%lx\n", state->blocked[player]);
 
 		for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
             fprintf(stderr, "\tResource %d: %d",
