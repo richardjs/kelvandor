@@ -27,7 +27,7 @@ void State_print(const struct State *state) {
             c = 'x';
         }
         if ((1llu << i) & state->branches[PLAYER_2]) {
-            if (c == 'X') {
+            if (c == 'x') {
                 c = '?';
             } else {
                 c = 'o';
@@ -51,7 +51,7 @@ void State_print(const struct State *state) {
     fprintf(stderr, "      %c%c%c%c\n", nc[0], ec[0], ec[0], nc[1]);
     fprintf(stderr, "      %c%c%c%c\n", ec[1], rc[0], lc[0], ec[2]);
     fprintf(stderr, "   %c%c%c%c%c%c%c%c%c%c\n", nc[2], ec[3], ec[3], nc[3], ec[4], ec[4], nc[4], ec[5], ec[5], nc[5]);
-    fprintf(stderr, "   %c%c%c%c%c%c%c%c%c%c\n", ec[7], rc[1], lc[1], ec[7], rc[2], lc[2], ec[8], rc[3], lc[3], ec[9]);
+    fprintf(stderr, "   %c%c%c%c%c%c%c%c%c%c\n", ec[6], rc[1], lc[1], ec[7], rc[2], lc[2], ec[8], rc[3], lc[3], ec[9]);
     fprintf(stderr, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", nc[6], ec[10], ec[10], nc[7], ec[11], ec[11], nc[8], ec[12], ec[12], nc[9], ec[13], ec[13], nc[10], ec[14], ec[14], nc[11]);
     fprintf(stderr, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", ec[15], rc[4], lc[4], ec[16], rc[5], lc[5], ec[17], rc[6], lc[6], ec[18], rc[7], lc[7], ec[19], rc[8], lc[8], ec[20]);
     fprintf(stderr, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c\n", nc[12], ec[21], ec[21], nc[13], ec[22], ec[22], nc[14], ec[23], ec[23], nc[15], ec[24], ec[24], nc[16], ec[25], ec[25], nc[17]);
