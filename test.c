@@ -375,12 +375,43 @@ int main() {
                 printf("Capture undo results in different state\n");
                 printf("Undone version:\n");
                 State_printDetail(&test);
-                printf("%d %d\n", state.largestNetworkSize, state.largestNetworkPlayer);
-                printf("%d %d\n", test.largestNetworkSize, test.largestNetworkPlayer);
                 printf("Reference version::\n");
                 State_printDetail(&state);
                 printf("---\n");
                 break;
+            }
+        }
+
+
+        {
+            // Test a whole bunch of actions and undos
+            for (int i = 0; i < 100; i++) {
+                const int TEST_DEPTH = 200;
+
+                struct Action actions[TEST_DEPTH];
+                struct State states[TEST_DEPTH];
+                int size = 0;
+
+                State_randomStart(&state);
+                while (state.actionCount && size < TEST_DEPTH) {
+                    states[size] = state;
+                    actions[size] = state.actions[rand() % state.actionCount];
+                    State_act(&state, &actions[size++]);
+                }
+
+                while (size > 1) {
+                    size--;
+                    State_undo(&state, &actions[size]);
+                    if (memcmp(&state, &states[size], sizeof(struct State)) != 0) {
+                        printf("Undo in random moves results in different state\n");
+                        printf("Undone version:\n");
+                        State_printDetail(&state);
+                        printf("Reference version::\n");
+                        State_printDetail(&states[size]);
+                        printf("---\n");
+                        break;
+                    }
+                }
             }
         }
     }
