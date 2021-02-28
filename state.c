@@ -222,13 +222,13 @@ void State_collectResources(struct State *state, int sign) {
 }
 
 
-void State_deriveLargestNetworkScore(struct State *state) {
+void State_updateLargestNetworkScore(struct State *state) {
     // Reset largest network information
     if (state->largestNetworkPlayer != PLAYER_NONE) {
         state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
     }
     state->largestNetworkSize = 0;
-    state->largestNetworkPlayer = 0;
+    state->largestNetworkPlayer = PLAYER_NONE;
 
     for (enum Player player = 0; player < NUM_PLAYERS; player++) {
         int networkSize = State_largestNetworkSize(state, player);
@@ -394,26 +394,8 @@ void State_derive(struct State *state) {
         state->score[player] += popcount(state->captured[player]);
     }
 
-    // Largest network
-    /*
-    state->largestNetworkSize = 0;
     state->largestNetworkPlayer = PLAYER_NONE;
-    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-        int size = State_largestNetworkSize(state, player);
-        if (size > state->largestNetworkSize) {
-            state->largestNetworkSize = size;
-            if (state->largestNetworkPlayer != PLAYER_NONE) {
-                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
-            }
-            state->score[player] += LARGEST_NETWORK_SCORE;
-            state->largestNetworkPlayer = player;
-        } else if (size == state->largestNetworkSize) {
-            if (state->largestNetworkPlayer != PLAYER_NONE) {
-                state->score[state->largestNetworkPlayer] -= LARGEST_NETWORK_SCORE;
-            }
-        }
-    }
-    */
+    State_updateLargestNetworkScore(state);
 
     State_deriveActions(state);
 }
@@ -438,6 +420,8 @@ void State_act(struct State *state, const struct Action *action) {
             } else if (popcount(state->nodes[PLAYER_2]) == START_NODES) {
                 state->turn = PLAYER_1;
             }
+
+            State_updateLargestNetworkScore(state);
 
             break;
         }
@@ -465,7 +449,7 @@ void State_act(struct State *state, const struct Action *action) {
             }
             state->score[state->turn] += popcount(state->captured[state->turn]);
 
-            //State_deriveLargestNetworkScore(state);
+            State_updateLargestNetworkScore(state);
 
             break;
         }
@@ -516,6 +500,8 @@ void State_undo(struct State *state, const struct Action *action) {
 
             state->score[state->turn] -= 1;
 
+            State_updateLargestNetworkScore(state);
+
             break;
         }
 
@@ -542,7 +528,7 @@ void State_undo(struct State *state, const struct Action *action) {
             }
             state->score[state->turn] += popcount(state->captured[state->turn]);
 
-            //State_deriveLargestNetworkScore(state);
+            State_updateLargestNetworkScore(state);
 
             break;
         }
@@ -576,6 +562,7 @@ void State_undo(struct State *state, const struct Action *action) {
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
+    state->largestNetworkPlayer = PLAYER_NONE;
 
     // Randomize the starting squares by interating through all squares
     // and picking a random location for each. The vacant square will

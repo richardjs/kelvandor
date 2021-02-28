@@ -115,12 +115,11 @@ int main() {
         }
     }
 
-
     // Test start actions and undo
     {
         State_randomStart(&state);
         if (state.actionCount != 72) {
-            printf("Incorrect number of starting actions\n");
+            printf("Incorrect number of starting actions: %d\n", state.actionCount);
         }
         struct Action action1 = state.actions[rand() % state.actionCount];
         struct State state1 = state;
@@ -424,6 +423,11 @@ int main() {
                         State_printDetail(&states[size]);
                         printf("---\n");
                         i = 1000;
+
+                        if (memcmp(&derived.squares, &states[size].squares, sizeof(struct Square) * NUM_SQUARES) != 0) {
+                            printf("Squares differ");
+                        }
+
                         break;
                     }
                 }
@@ -432,7 +436,6 @@ int main() {
 
 
     }
-
 
     printf("Done\n");
     return 0;
