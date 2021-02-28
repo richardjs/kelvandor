@@ -74,7 +74,7 @@ void State_printDetail(const struct State *state) {
 	for (enum Player player = 0; player < NUM_PLAYERS; player++) {
 		fprintf(stderr, "Player %d:", player);
 		fprintf(stderr, "\tScore:\t%d", state->score[player]);
-		fprintf(stderr, "\tNodes:\t%d", popcount(state->nodes[player]));
+		fprintf(stderr, "\tNode count:\t%d", popcount(state->nodes[player]));
 		fprintf(stderr, "\tCaptured:\t%x", state->captured[player]);
 		fprintf(stderr, "\tBlocked:\t%lx\n", state->blocked[player]);
 
