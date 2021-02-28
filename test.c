@@ -1,4 +1,3 @@
-#include "lookups.h"
 #include "state.h"
 
 #include <stdio.h>

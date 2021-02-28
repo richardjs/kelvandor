@@ -1,4 +1,4 @@
-#include "lookups.h"
+#include "layout.h"
 
 
 const int SQUARE_ADJACENT_SQUARES[NUM_SQUARES][4] = {
