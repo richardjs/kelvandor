@@ -384,7 +384,7 @@ int main() {
 
 
         {
-            // Test a whole bunch of actions and undos
+            // Test a whole bunch of actions, undos, and derives
             for (int i = 0; i < 100; i++) {
                 const int TEST_DEPTH = 200;
 
@@ -408,12 +408,29 @@ int main() {
                         State_printDetail(&state);
                         printf("Reference version::\n");
                         State_printDetail(&states[size]);
+                        printf("Undone action %d\tdata %d\n", actions[size].type, actions[size].data);
                         printf("---\n");
+                        i = 1000;
+                        break;
+                    }
+
+                    struct State derived = states[size];
+                    State_derive(&derived);
+                    if (memcmp(&derived, &states[size], sizeof(struct State)) != 0) {
+                        printf("Derive in random moves results in different state\n");
+                        printf("Derived version:\n");
+                        State_printDetail(&derived);
+                        printf("Reference version::\n");
+                        State_printDetail(&states[size]);
+                        printf("---\n");
+                        i = 1000;
                         break;
                     }
                 }
             }
         }
+
+
     }
 
 
