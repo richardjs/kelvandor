@@ -5,6 +5,57 @@
 #include <string.h>
 
 
+int State_largestNetworkSize(const struct State *state, enum Player player) {
+    uint64_t networks[NUM_SQUARES] = {0llu};
+    uint64_t networkAdjacents[NUM_SQUARES] = {0llu};
+    int count = 0;
+
+    uint64_t branches = state->branches[player];
+    while (branches) {
+        int branch = bitscan(branches);
+        branches ^= (1llu << branch);
+
+        if (count == 0) {
+            networks[count] = (1llu << branch);
+            networkAdjacents[count] = EDGE_ADJACENT_EDGES[branch];
+            count++;
+        } else {
+            for (int i = 0; i < count; i++) {
+                if ((1llu << branch) & networkAdjacents[i]) {
+                    networks[i] |= (1llu << branch);
+                    networkAdjacents[i] |= EDGE_ADJACENT_EDGES[branch];
+                    goto nextbit;
+                }
+            }
+
+            networks[count] = (1llu << branch);
+            networkAdjacents[count] = EDGE_ADJACENT_EDGES[branch];
+            count++;
+        }
+
+        nextbit:
+        continue;
+    }
+
+    int largestSize = 0;
+    for (int i = 0; i < count; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (networkAdjacents[i] & networks[j]) {
+                networks[i] |= networks[j];
+                networkAdjacents[i] |= networkAdjacents[j];
+            }
+        }
+
+        int networkSize = popcount(networks[i]);
+        if (networkSize > largestSize) {
+            largestSize = networkSize;
+        }
+    }
+
+    return largestSize;
+}
+
+
 // Updates if the given square is captured, as well as any connected
 // squares in a captured region. Typically called after a branch is
 // placed, to determine if the squares adjacent to the branch are now
@@ -151,55 +202,6 @@ bool State_updateCaptured(struct State *state, int square) {
 }
 
 
-int State_largestNetworkSize(const struct State *state, enum Player player) {
-    uint_fast64_t branches = state->branches[player];
-
-    uint_fast64_t networks[NUM_SQUARES] = {0};
-    uint_fast64_t networksAdjacents[NUM_SQUARES] = {0};
-    int count = 0;
-
-    while (branches) {
-        int branch = bitscan(branches);
-        branches ^= (1llu << branch);
-
-        if (count == 0) {
-            networks[count] = (1llu << branch);
-            networksAdjacents[count++] = EDGE_ADJACENT_EDGES[branch];
-        } else {
-            for (int i = 0; i < count; i++) {
-                if ((1llu << branch) & networksAdjacents[i]) {
-                    networks[i] |= (1llu << branch);
-                    networksAdjacents[i] |= EDGE_ADJACENT_EDGES[branch];
-                    goto nextbit;
-                }
-            }
-
-            networks[count] =  (1llu << branch);
-            networksAdjacents[count++] = EDGE_ADJACENT_EDGES[branch];
-        }
-
-        nextbit:
-        continue;
-    }
-
-    int largestSize = 0;
-    for (int i = 0; i < count; i++) {
-        for (int j = i + 1; j < i; j++) {
-            if (networks[i] & networks[j]) {
-                networks[i] |= networks[j];
-            }
-        }
-
-        int networkSize = popcount(networks[i]);
-        if (networkSize > largestSize) {
-            largestSize = networkSize;
-        }
-    }
-
-    return largestSize;
-}
-
-
 void State_collectResources(struct State *state, int sign) {
     uint_fast32_t nodeBits = state->nodes[state->turn]; 
     while (nodeBits) {
@@ -232,7 +234,7 @@ void State_deriveLargestNetworkScore(struct State *state) {
         int networkSize = State_largestNetworkSize(state, player);
         if (networkSize > state->largestNetworkSize) {
             state->largestNetworkSize = networkSize;
-            state->largestNetworkPlayer;
+            state->largestNetworkPlayer = player;
         } else if (networkSize == state->largestNetworkSize) {
             state->largestNetworkSize = networkSize;
             state->largestNetworkPlayer = PLAYER_NONE;

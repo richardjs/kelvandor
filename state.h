@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 
-#define popcount(x) __builtin_popcount(x)
+#define popcount(x) __builtin_popcountl(x)
 #define bitscan(x) __builtin_ctzl(x)
 
 #define NUM_PLAYERS 2
