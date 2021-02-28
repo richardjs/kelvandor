@@ -68,6 +68,8 @@ void State_printDetail(const struct State *state) {
     fprintf(stderr, "Action count: %d\t", state->actionCount);
     fprintf(stderr, "Trade done: %d\t", state->tradeDone);
     fprintf(stderr, "\n");
+    fprintf(stderr, "Largest network size: %d\t", state->largestNetworkSize);
+    fprintf(stderr, "Largest network player: %d\n", state->largestNetworkPlayer);
 
 	for (enum Player player = 0; player < NUM_PLAYERS; player++) {
 		fprintf(stderr, "Player %d:", player);
