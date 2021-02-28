@@ -341,7 +341,7 @@ void State_deriveActions(struct State *state) {
 
     if (state->resources[state->turn][RED >= BRANCH_COST]
             && state->resources[state->turn][BLUE] >= BRANCH_COST) {
-        bits = openEdges;
+        bits = adjacentEdges;
         while (bits) {
             int bit = bitscan(bits);
             bits ^= (1llu << bit);
@@ -354,7 +354,7 @@ void State_deriveActions(struct State *state) {
 
     if (state->resources[state->turn][YELLOW >= NODE_COST]
            && state->resources[state->turn][GREEN] >= NODE_COST) {
-        bits = openCorners;
+        bits = adjacentCorners;
         while (bits) {
             int bit = bitscan(bits);
             bits ^= (1llu << bit);
