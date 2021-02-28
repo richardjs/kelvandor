@@ -336,7 +336,7 @@ int main() {
     }
 
 
-    // Test captured region build blocking
+    // Test captured region build blocking and undoing after blocking
     {
         State_randomStart(&state);
         state.nodes[PLAYER_1] = 0b1000000001;
@@ -346,7 +346,6 @@ int main() {
         state.turn = PLAYER_2;
         state.resources[PLAYER_2][RED] = 1;
         state.resources[PLAYER_2][BLUE] = 1;
-        State_derive(&state);
 
         for (int i = 0; i < state.actionCount; i++) {
             if (state.actions[i].type != BRANCH) {
@@ -355,6 +354,33 @@ int main() {
             if (state.actions[i].data == 4) {
                 printf("Build possible in opponent-captured region\n");
                 State_printDetail(&state);
+            }
+        }
+
+        // Setting up for making a capturing (and blocking) move so we can undo it
+        state.branches[PLAYER_1] = 0b1000110000110;
+        state.resources[PLAYER_1][RED] = 1;
+        state.resources[PLAYER_1][BLUE] = 1;
+        state.turn = PLAYER_1;
+        State_derive(&state);
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type != BRANCH || state.actions[i].data != 0) {
+                continue;
+            }
+            struct State test = state;
+            struct Action action = test.actions[i];
+            State_act(&test, &test.actions[i]);
+            State_undo(&test, &action);
+            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+                printf("Capture undo results in different state\n");
+                printf("Undone version:\n");
+                State_printDetail(&test);
+                printf("%d %d\n", state.largestNetworkSize, state.largestNetworkPlayer);
+                printf("%d %d\n", test.largestNetworkSize, test.largestNetworkPlayer);
+                printf("Reference version::\n");
+                State_printDetail(&state);
+                printf("---\n");
+                break;
             }
         }
     }
