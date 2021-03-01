@@ -5,9 +5,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
+// Emscripten has different sizes for ints
+// This could probably be made more generic
+#ifdef __EMSCRIPTEN__
+#define popcount(x) __builtin_popcountll(x)
+#define bitscan(x) __builtin_ctzll(x)
+#else
 #define popcount(x) __builtin_popcountl(x)
 #define bitscan(x) __builtin_ctzl(x)
+#endif
 
 #define NUM_PLAYERS 2
 #define NUM_RESOURCES 4

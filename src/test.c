@@ -24,6 +24,10 @@ void State_pastStart(struct State *state) {
 int main() {
     printf("Kelvandor tests\n");
 
+    #ifdef __EMSCRIPTEN__
+    printf("Emscripten detected\n");
+    #endif
+
     time_t seed = time(NULL);
     printf("Seed: %ld\n", seed);
     srand(seed);
@@ -113,6 +117,7 @@ int main() {
             printf("Error calculating largest network size in more complex case: %d\n", size);
         }
     }
+
 
     // Test start actions and undo
     {
