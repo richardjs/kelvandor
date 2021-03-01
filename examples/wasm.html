@@ -17,6 +17,10 @@
                     console.log('Undoing it...');
                     state.undo(action);
                     state.print();
+
+                    // See https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html#memory-management
+                    console.log('Deleting state...');
+                    state.delete();
                 }
             };
             let kelvandor = Module;
