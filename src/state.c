@@ -250,7 +250,7 @@ void State_updateLargestNetworkScore(struct State *state) {
 void State_deriveStartActions(struct State *state) {
     state->actionCount = 0;
 
-    uint_fast32_t openEdges = ~(state->branches[PLAYER_1] | state->branches[PLAYER_2]);
+    uint_fast64_t openEdges = ~(state->branches[PLAYER_1] | state->branches[PLAYER_2]);
     openEdges &= (1llu << NUM_EDGES) - 1;
     uint_fast32_t openCorners = ~(state->nodes[PLAYER_1] | state->nodes[PLAYER_2]);
     openCorners &= (1llu << NUM_CORNERS) - 1;
