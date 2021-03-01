@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script>
+            var Module = {
+                onRuntimeInitialized: function() {
+                    console.log('Creating a new state...');
+                    let state = new kelvandor.State();
+                    state.print();
+
+                    console.log('Making a move...');
+                    console.log('Actions:', state.actionCount());
+                    let action = state.getAction(0);
+                    state.act(action);
+                    state.print();
+
+                    console.log('Undoing it...');
+                    state.undo(action);
+                    state.print();
+                }
+            };
+            let kelvandor = Module;
+        </script>
+        <script src="../wasm/kelvandor.js"></script>
+    </head>
+    <body></body>
+</html>

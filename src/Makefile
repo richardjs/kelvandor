@@ -14,16 +14,14 @@ test: $(objects)
 
 
 wasm:
-	emcc -c state.c -o state.o
-	emcc -c stateio.c -o stateio.o
-	emcc -c layout.c -o layout.o
-	emcc --bind wasmlib.cpp state.o stateio.o layout.o -o kelvandor.js
-
-
-wasm_dist: wasm
+	emcc -Wall -c state.c -o state.o
+	emcc -Wall -c stateio.c -o stateio.o
+	emcc -Wall -c layout.c -o layout.o
+	emcc -Wall --bind wasmlib.cpp state.o stateio.o layout.o -o kelvandor.js
 	mkdir -p ../wasm
 	mv *.wasm ../wasm
 	mv *.js ../wasm
+	rm -f state.o stateio.o layout.o
 
 
 clean:
