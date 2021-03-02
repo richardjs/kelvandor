@@ -30,6 +30,7 @@
 #define NODE_COST 2
 #define WIN_SCORE 10
 #define STATE_STRING_SIZE 105
+#define ACTION_STRING_SIZE 5
 
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
@@ -96,6 +97,7 @@ void State_undo(struct State *state, const struct Action *action);
 
 /* Interface */
 
+void Action_toString(const struct Action *action, char string[]);
 void State_toString(const struct State *state, char string[]);
 void State_fromString(struct State *state, const char string[]);
 

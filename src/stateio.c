@@ -6,6 +6,43 @@
 void State_derive(struct State *state);
 
 
+void Action_toString(const struct Action *action, char string[]) {
+    switch (action->type) {
+        case START_PLACE: {
+            int node = action->data & 0b11111;
+            int dir = action->data >> 6;
+
+            const char DIRECTION_CHARS[] = {'n', 's', 'e', 'w'};
+            sprintf(string, "s%02d%c", node, DIRECTION_CHARS[dir]);
+            break;
+        }
+        case TRADE: {
+            int in1 = (action->data >> 0)  & 0b11;
+            int in2 = (action->data >> 2)  & 0b11;
+            int in3 = (action->data >> 4)  & 0b11;
+            int out = (action->data >> 6)  & 0b11;
+
+            const char RC[4] = "rybg";
+            sprintf(string, "t%c%c%c%c", RC[in1], RC[in2], RC[in3], RC[out]);
+            break;
+        }
+        case BRANCH: {
+            sprintf(string, "b%02d", action->data);
+            break;
+        }
+        case NODE: {
+            sprintf(string, "n%02d", action->data);
+            break;
+        }
+        case END: {
+            string[0] = 's';
+            string[1] = '\0';
+            break;
+        }
+    }
+}
+
+
 void State_toString(const struct State *state, char string[]) {
     int s = 0;
     char c;
