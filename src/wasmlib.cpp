@@ -17,6 +17,21 @@ class WasmState {
         State_randomStart(&state);
     }
 
+    WasmState(string str) {
+        State_fromString(&state, str.c_str());
+    }
+
+    void fromString(string str) {
+        State_fromString(&state, str.c_str());
+    }
+
+    string toString() {
+        char cstr[STATE_STRING_SIZE];
+        State_toString(&state, cstr);
+        string str = cstr;
+        return str;
+    }
+
     int actionCount() {
         return state.actionCount;
     }
@@ -62,6 +77,9 @@ EMSCRIPTEN_BINDINGS(kelvandor) {
 
     class_<WasmState>("State")
         .constructor<>()
+        .constructor<string>()
+        .function("fromString", &WasmState::fromString)
+        .function("toString", &WasmState::toString)
         .function("actionCount", &WasmState::actionCount)
         .function("getAction", &WasmState::getAction)
         .function("act", &WasmState::act)
