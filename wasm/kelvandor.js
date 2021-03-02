@@ -1752,18 +1752,115 @@ var ASM_CONSTS = {
       return demangleAll(js);
     }
 
-  var structRegistrations={};
+  var ExceptionInfoAttrs={DESTRUCTOR_OFFSET:0,REFCOUNT_OFFSET:4,TYPE_OFFSET:8,CAUGHT_OFFSET:12,RETHROWN_OFFSET:13,SIZE:16};
+  function ___cxa_allocate_exception(size) {
+      // Thrown object is prepended by exception metadata block
+      return _malloc(size + ExceptionInfoAttrs.SIZE) + ExceptionInfoAttrs.SIZE;
+    }
+
+  function ExceptionInfo(excPtr) {
+      this.excPtr = excPtr;
+      this.ptr = excPtr - ExceptionInfoAttrs.SIZE;
   
-  function runDestructors(destructors) {
-      while (destructors.length) {
-          var ptr = destructors.pop();
-          var del = destructors.pop();
-          del(ptr);
+      this.set_type = function(type) {
+        HEAP32[(((this.ptr)+(ExceptionInfoAttrs.TYPE_OFFSET))>>2)] = type;
+      };
+  
+      this.get_type = function() {
+        return HEAP32[(((this.ptr)+(ExceptionInfoAttrs.TYPE_OFFSET))>>2)];
+      };
+  
+      this.set_destructor = function(destructor) {
+        HEAP32[(((this.ptr)+(ExceptionInfoAttrs.DESTRUCTOR_OFFSET))>>2)] = destructor;
+      };
+  
+      this.get_destructor = function() {
+        return HEAP32[(((this.ptr)+(ExceptionInfoAttrs.DESTRUCTOR_OFFSET))>>2)];
+      };
+  
+      this.set_refcount = function(refcount) {
+        HEAP32[(((this.ptr)+(ExceptionInfoAttrs.REFCOUNT_OFFSET))>>2)] = refcount;
+      };
+  
+      this.set_caught = function (caught) {
+        caught = caught ? 1 : 0;
+        HEAP8[(((this.ptr)+(ExceptionInfoAttrs.CAUGHT_OFFSET))>>0)] = caught;
+      };
+  
+      this.get_caught = function () {
+        return HEAP8[(((this.ptr)+(ExceptionInfoAttrs.CAUGHT_OFFSET))>>0)] != 0;
+      };
+  
+      this.set_rethrown = function (rethrown) {
+        rethrown = rethrown ? 1 : 0;
+        HEAP8[(((this.ptr)+(ExceptionInfoAttrs.RETHROWN_OFFSET))>>0)] = rethrown;
+      };
+  
+      this.get_rethrown = function () {
+        return HEAP8[(((this.ptr)+(ExceptionInfoAttrs.RETHROWN_OFFSET))>>0)] != 0;
+      };
+  
+      // Initialize native structure fields. Should be called once after allocated.
+      this.init = function(type, destructor) {
+        this.set_type(type);
+        this.set_destructor(destructor);
+        this.set_refcount(0);
+        this.set_caught(false);
+        this.set_rethrown(false);
+      }
+  
+      this.add_ref = function() {
+        var value = HEAP32[(((this.ptr)+(ExceptionInfoAttrs.REFCOUNT_OFFSET))>>2)];
+        HEAP32[(((this.ptr)+(ExceptionInfoAttrs.REFCOUNT_OFFSET))>>2)] = value + 1;
+      };
+  
+      // Returns true if last reference released.
+      this.release_ref = function() {
+        var prev = HEAP32[(((this.ptr)+(ExceptionInfoAttrs.REFCOUNT_OFFSET))>>2)];
+        HEAP32[(((this.ptr)+(ExceptionInfoAttrs.REFCOUNT_OFFSET))>>2)] = prev - 1;
+        assert(prev > 0);
+        return prev === 1;
+      };
+    }
+  
+  var exceptionLast=0;
+  
+  var uncaughtExceptionCount=0;
+  function ___cxa_throw(ptr, type, destructor) {
+      var info = new ExceptionInfo(ptr);
+      // Initialize ExceptionInfo content after it was allocated in __cxa_allocate_exception.
+      info.init(type, destructor);
+      exceptionLast = ptr;
+      uncaughtExceptionCount++;
+      throw ptr + " - Exception catching is disabled, this exception cannot be caught. Compile with -s DISABLE_EXCEPTION_CATCHING=0 or DISABLE_EXCEPTION_CATCHING=2 to catch.";
+    }
+
+  function getShiftFromSize(size) {
+      switch (size) {
+          case 1: return 0;
+          case 2: return 1;
+          case 4: return 2;
+          case 8: return 3;
+          default:
+              throw new TypeError('Unknown type size: ' + size);
       }
     }
   
-  function simpleReadValueFromPointer(pointer) {
-      return this['fromWireType'](HEAPU32[pointer >> 2]);
+  function embind_init_charCodes() {
+      var codes = new Array(256);
+      for (var i = 0; i < 256; ++i) {
+          codes[i] = String.fromCharCode(i);
+      }
+      embind_charCodes = codes;
+    }
+  var embind_charCodes=undefined;
+  function readLatin1String(ptr) {
+      var ret = "";
+      var c = ptr;
+      while (HEAPU8[c]) {
+          ret += embind_charCodes[HEAPU8[c++]];
+      }
+      return ret;
     }
   
   var awaitingDependencies={};
@@ -1821,6 +1918,11 @@ var ASM_CONSTS = {
   
       return errorClass;
     }
+  var BindingError=undefined;
+  function throwBindingError(message) {
+      throw new BindingError(message);
+    }
+  
   var InternalError=undefined;
   function throwInternalError(message) {
       throw new InternalError(message);
@@ -1863,104 +1965,6 @@ var ASM_CONSTS = {
       if (0 === unregisteredTypes.length) {
           onComplete(typeConverters);
       }
-    }
-  function __embind_finalize_value_object(structType) {
-      var reg = structRegistrations[structType];
-      delete structRegistrations[structType];
-  
-      var rawConstructor = reg.rawConstructor;
-      var rawDestructor = reg.rawDestructor;
-      var fieldRecords = reg.fields;
-      var fieldTypes = fieldRecords.map(function(field) { return field.getterReturnType; }).
-                concat(fieldRecords.map(function(field) { return field.setterArgumentType; }));
-      whenDependentTypesAreResolved([structType], fieldTypes, function(fieldTypes) {
-          var fields = {};
-          fieldRecords.forEach(function(field, i) {
-              var fieldName = field.fieldName;
-              var getterReturnType = fieldTypes[i];
-              var getter = field.getter;
-              var getterContext = field.getterContext;
-              var setterArgumentType = fieldTypes[i + fieldRecords.length];
-              var setter = field.setter;
-              var setterContext = field.setterContext;
-              fields[fieldName] = {
-                  read: function(ptr) {
-                      return getterReturnType['fromWireType'](
-                          getter(getterContext, ptr));
-                  },
-                  write: function(ptr, o) {
-                      var destructors = [];
-                      setter(setterContext, ptr, setterArgumentType['toWireType'](destructors, o));
-                      runDestructors(destructors);
-                  }
-              };
-          });
-  
-          return [{
-              name: reg.name,
-              'fromWireType': function(ptr) {
-                  var rv = {};
-                  for (var i in fields) {
-                      rv[i] = fields[i].read(ptr);
-                  }
-                  rawDestructor(ptr);
-                  return rv;
-              },
-              'toWireType': function(destructors, o) {
-                  // todo: Here we have an opportunity for -O3 level "unsafe" optimizations:
-                  // assume all fields are present without checking.
-                  for (var fieldName in fields) {
-                      if (!(fieldName in o)) {
-                          throw new TypeError('Missing field:  "' + fieldName + '"');
-                      }
-                  }
-                  var ptr = rawConstructor();
-                  for (fieldName in fields) {
-                      fields[fieldName].write(ptr, o[fieldName]);
-                  }
-                  if (destructors !== null) {
-                      destructors.push(rawDestructor, ptr);
-                  }
-                  return ptr;
-              },
-              'argPackAdvance': 8,
-              'readValueFromPointer': simpleReadValueFromPointer,
-              destructorFunction: rawDestructor,
-          }];
-      });
-    }
-
-  function getShiftFromSize(size) {
-      switch (size) {
-          case 1: return 0;
-          case 2: return 1;
-          case 4: return 2;
-          case 8: return 3;
-          default:
-              throw new TypeError('Unknown type size: ' + size);
-      }
-    }
-  
-  function embind_init_charCodes() {
-      var codes = new Array(256);
-      for (var i = 0; i < 256; ++i) {
-          codes[i] = String.fromCharCode(i);
-      }
-      embind_charCodes = codes;
-    }
-  var embind_charCodes=undefined;
-  function readLatin1String(ptr) {
-      var ret = "";
-      var c = ptr;
-      while (HEAPU8[c]) {
-          ret += embind_charCodes[HEAPU8[c++]];
-      }
-      return ret;
-    }
-  
-  var BindingError=undefined;
-  function throwBindingError(message) {
-      throw new BindingError(message);
     }
   /** @param {Object=} options */
   function registerType(rawType, registeredInstance, options) {
@@ -2384,6 +2388,10 @@ var ASM_CONSTS = {
       var handleClass = handle.$$.ptrType.registeredClass;
       var ptr = upcastPointer(handle.$$.ptr, handleClass, this.registeredClass);
       return ptr;
+    }
+  
+  function simpleReadValueFromPointer(pointer) {
+      return this['fromWireType'](HEAPU32[pointer >> 2]);
     }
   
   function RegisteredPointer_getPointee(ptr) {
@@ -2825,6 +2833,14 @@ var ASM_CONSTS = {
       }
       return array;
     }
+  
+  function runDestructors(destructors) {
+      while (destructors.length) {
+          var ptr = destructors.pop();
+          var del = destructors.pop();
+          del(ptr);
+      }
+    }
   function __embind_register_class_constructor(
       rawClassType,
       argCount,
@@ -3126,78 +3142,6 @@ var ASM_CONSTS = {
       });
     }
 
-  function enumReadValueFromPointer(name, shift, signed) {
-      switch (shift) {
-          case 0: return function(pointer) {
-              var heap = signed ? HEAP8 : HEAPU8;
-              return this['fromWireType'](heap[pointer]);
-          };
-          case 1: return function(pointer) {
-              var heap = signed ? HEAP16 : HEAPU16;
-              return this['fromWireType'](heap[pointer >> 1]);
-          };
-          case 2: return function(pointer) {
-              var heap = signed ? HEAP32 : HEAPU32;
-              return this['fromWireType'](heap[pointer >> 2]);
-          };
-          default:
-              throw new TypeError("Unknown integer type: " + name);
-      }
-    }
-  function __embind_register_enum(
-      rawType,
-      name,
-      size,
-      isSigned
-    ) {
-      var shift = getShiftFromSize(size);
-      name = readLatin1String(name);
-  
-      function ctor() {
-      }
-      ctor.values = {};
-  
-      registerType(rawType, {
-          name: name,
-          constructor: ctor,
-          'fromWireType': function(c) {
-              return this.constructor.values[c];
-          },
-          'toWireType': function(destructors, c) {
-              return c.value;
-          },
-          'argPackAdvance': 8,
-          'readValueFromPointer': enumReadValueFromPointer(name, shift, isSigned),
-          destructorFunction: null,
-      });
-      exposePublicSymbol(name, ctor);
-    }
-
-  function requireRegisteredType(rawType, humanName) {
-      var impl = registeredTypes[rawType];
-      if (undefined === impl) {
-          throwBindingError(humanName + " has unknown type " + getTypeName(rawType));
-      }
-      return impl;
-    }
-  function __embind_register_enum_value(
-      rawEnumType,
-      name,
-      enumValue
-    ) {
-      var enumType = requireRegisteredType(rawEnumType, 'enum');
-      name = readLatin1String(name);
-  
-      var Enum = enumType.constructor;
-  
-      var Value = Object.create(enumType.constructor.prototype, {
-          value: {value: enumValue},
-          constructor: {value: createNamedFunction(enumType.name + '_' + name, function() {})},
-      });
-      Enum.values[enumValue] = Value;
-      Enum[name] = Value;
-    }
-
   function _embind_repr(v) {
       if (v === null) {
           return 'null';
@@ -3494,45 +3438,6 @@ var ASM_CONSTS = {
       });
     }
 
-  function __embind_register_value_object(
-      rawType,
-      name,
-      constructorSignature,
-      rawConstructor,
-      destructorSignature,
-      rawDestructor
-    ) {
-      structRegistrations[rawType] = {
-          name: readLatin1String(name),
-          rawConstructor: embind__requireFunction(constructorSignature, rawConstructor),
-          rawDestructor: embind__requireFunction(destructorSignature, rawDestructor),
-          fields: [],
-      };
-    }
-
-  function __embind_register_value_object_field(
-      structType,
-      fieldName,
-      getterReturnType,
-      getterSignature,
-      getter,
-      getterContext,
-      setterArgumentType,
-      setterSignature,
-      setter,
-      setterContext
-    ) {
-      structRegistrations[structType].fields.push({
-          fieldName: readLatin1String(fieldName),
-          getterReturnType: getterReturnType,
-          getter: embind__requireFunction(getterSignature, getter),
-          getterContext: getterContext,
-          setterArgumentType: setterArgumentType,
-          setter: embind__requireFunction(setterSignature, setter),
-          setterContext: setterContext,
-      });
-    }
-
   function __embind_register_void(rawType, name) {
       name = readLatin1String(name);
       registerType(rawType, {
@@ -3547,6 +3452,26 @@ var ASM_CONSTS = {
               return undefined;
           },
       });
+    }
+
+
+  function __emval_incref(handle) {
+      if (handle > 4) {
+          emval_handle_array[handle].refcount += 1;
+      }
+    }
+
+  function requireRegisteredType(rawType, humanName) {
+      var impl = registeredTypes[rawType];
+      if (undefined === impl) {
+          throwBindingError(humanName + " has unknown type " + getTypeName(rawType));
+      }
+      return impl;
+    }
+  function __emval_take_value(type, argv) {
+      type = requireRegisteredType(type, '_emval_take_value');
+      var v = type['readValueFromPointer'](argv);
+      return __emval_register(v);
     }
 
   function _abort() {
@@ -3625,9 +3550,9 @@ var ASM_CONSTS = {
   function _setTempRet0($i) {
       setTempRet0(($i) | 0);
     }
-InternalError = Module['InternalError'] = extendError(Error, 'InternalError');;
 embind_init_charCodes();
 BindingError = Module['BindingError'] = extendError(Error, 'BindingError');;
+InternalError = Module['InternalError'] = extendError(Error, 'InternalError');;
 init_ClassHandle();
 init_RegisteredPointer();
 init_embind();;
@@ -3663,22 +3588,22 @@ function intArrayToString(array) {
 
 
 var asmLibraryArg = {
-  "_embind_finalize_value_object": __embind_finalize_value_object,
+  "__cxa_allocate_exception": ___cxa_allocate_exception,
+  "__cxa_throw": ___cxa_throw,
   "_embind_register_bool": __embind_register_bool,
   "_embind_register_class": __embind_register_class,
   "_embind_register_class_constructor": __embind_register_class_constructor,
   "_embind_register_class_function": __embind_register_class_function,
   "_embind_register_emval": __embind_register_emval,
-  "_embind_register_enum": __embind_register_enum,
-  "_embind_register_enum_value": __embind_register_enum_value,
   "_embind_register_float": __embind_register_float,
   "_embind_register_integer": __embind_register_integer,
   "_embind_register_memory_view": __embind_register_memory_view,
   "_embind_register_std_string": __embind_register_std_string,
   "_embind_register_std_wstring": __embind_register_std_wstring,
-  "_embind_register_value_object": __embind_register_value_object,
-  "_embind_register_value_object_field": __embind_register_value_object_field,
   "_embind_register_void": __embind_register_void,
+  "_emval_decref": __emval_decref,
+  "_emval_incref": __emval_incref,
+  "_emval_take_value": __emval_take_value,
   "abort": _abort,
   "emscripten_memcpy_big": _emscripten_memcpy_big,
   "emscripten_resize_heap": _emscripten_resize_heap,
@@ -3732,6 +3657,9 @@ var _emscripten_stack_get_free = Module["_emscripten_stack_get_free"] = function
 var _emscripten_stack_get_end = Module["_emscripten_stack_get_end"] = function() {
   return (_emscripten_stack_get_end = Module["_emscripten_stack_get_end"] = Module["asm"]["emscripten_stack_get_end"]).apply(null, arguments);
 };
+
+/** @type {function(...*):?} */
+var _setThrew = Module["_setThrew"] = createExportWrapper("setThrew");
 
 /** @type {function(...*):?} */
 var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji");
