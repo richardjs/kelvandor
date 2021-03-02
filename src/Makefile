@@ -24,6 +24,13 @@ wasm:
 	rm -f state.o stateio.o layout.o
 
 
+wasmtest:
+	make clean
+	emmake make test
+	node test
+	make clean
+
+
 clean:
 	rm -f *.o
 	rm -f *.js
