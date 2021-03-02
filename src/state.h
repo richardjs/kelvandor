@@ -29,6 +29,7 @@
 #define BRANCH_COST 1
 #define NODE_COST 2
 #define WIN_SCORE 10
+#define STATE_STRING_SIZE 105
 
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
@@ -39,7 +40,7 @@ enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 struct Square {
     enum Resource resource;
     uint_fast8_t limit;
-    uint_fast8_t remaining;
+    int_fast8_t remaining;
     enum Player captor;
 };
 
@@ -94,6 +95,9 @@ void State_undo(struct State *state, const struct Action *action);
 
 
 /* Interface */
+
+void State_toString(const struct State *state, char string[]);
+void State_fromString(struct State *state, const char string[]);
 
 // Print state to stderr
 void State_print(const struct State *state);

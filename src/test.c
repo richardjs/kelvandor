@@ -384,62 +384,108 @@ int main() {
                 break;
             }
         }
+    }
 
 
-        {
-            // Test a whole bunch of actions, undos, and derives
-            for (int i = 0; i < 100; i++) {
-                const int TEST_DEPTH = 200;
+    {
+        // Test a whole bunch of actions, undos, and derives
+        // Also test serialization and deserialization
+        for (int i = 0; i < 100; i++) {
+            const int TEST_DEPTH = 200;
 
-                struct Action actions[TEST_DEPTH];
-                struct State states[TEST_DEPTH];
-                int size = 0;
+            struct Action actions[TEST_DEPTH];
+            struct State states[TEST_DEPTH];
+            int size = 0;
 
-                State_randomStart(&state);
-                while (state.actionCount && size < TEST_DEPTH) {
-                    states[size] = state;
-                    actions[size] = state.actions[rand() % state.actionCount];
-                    State_act(&state, &actions[size++]);
+            State_randomStart(&state);
+            while (state.actionCount && size < TEST_DEPTH) {
+                states[size] = state;
+                actions[size] = state.actions[rand() % state.actionCount];
+                State_act(&state, &actions[size++]);
+
+                // While we've got a bunch of random states, test the serialization code
+                char string[STATE_STRING_SIZE];
+                State_toString(&state, string);
+                struct State test = state;
+                State_fromString(&test, string);
+                if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+                    printf("Serializing and deserializing does not result in same state\n");
+                    printf("Deserialized version:\n");
+                    State_printDetail(&test);
+                    printf("Reference version:\n");
+                    State_printDetail(&state);
+                    printf("String:\t%s\n", string);
+                    printf("Guide:\trlrlrlrlrlrlrlrlrlrlrlrlrlnnnnnnnnnnnnnnnnnnnnnnnneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeetbbggrryybbggrryyt\n");
+
+                    if (memcmp(&state.squares, &test.squares, NUM_SQUARES*sizeof(struct Square)) != 0) {
+                        printf("Squares differ\n");
+                        for (int sq = 0; sq < NUM_SQUARES; sq++) {
+                            printf("square %d:\tres: %d:%d\tlim: %d:%d\trem: %d:%d\tcap: %d:%d\n",
+                                sq,
+                                test.squares[sq].resource, state.squares[sq].resource,
+                                test.squares[sq].limit, state.squares[sq].limit,
+                                test.squares[sq].remaining, state.squares[sq].remaining,
+                                test.squares[sq].captor, state.squares[sq].captor);
+                        }
+                    }
+                    if (memcmp(&state.actions, &test.actions, MAX_ACTIONS*sizeof(struct Action)) != 0) {
+                        printf("Actions differ\n");
+                    }
+
+                    return 1;
+                }
+            }
+
+            while (size > 1) {
+                size--;
+                State_undo(&state, &actions[size]);
+                if (memcmp(&state, &states[size], sizeof(struct State)) != 0) {
+                    printf("Undo in random moves results in different state\n");
+                    printf("Undone version:\n");
+                    State_printDetail(&state);
+                    printf("Reference version::\n");
+                    State_printDetail(&states[size]);
+                    printf("Undone action %d\tdata %d\n", actions[size].type, actions[size].data);
+                    printf("---\n");
+                    i = 1000;
+                    break;
                 }
 
-                while (size > 1) {
-                    size--;
-                    State_undo(&state, &actions[size]);
-                    if (memcmp(&state, &states[size], sizeof(struct State)) != 0) {
-                        printf("Undo in random moves results in different state\n");
-                        printf("Undone version:\n");
-                        State_printDetail(&state);
-                        printf("Reference version::\n");
-                        State_printDetail(&states[size]);
-                        printf("Undone action %d\tdata %d\n", actions[size].type, actions[size].data);
-                        printf("---\n");
-                        i = 1000;
-                        break;
+                struct State derived = states[size];
+                State_derive(&derived);
+                if (memcmp(&derived, &states[size], sizeof(struct State)) != 0) {
+                    printf("Derive in random moves results in different state\n");
+                    printf("Derived version:\n");
+                    State_printDetail(&derived);
+                    printf("Reference version::\n");
+                    State_printDetail(&states[size]);
+                    printf("---\n");
+                    i = 1000;
+
+                    if (memcmp(&derived.squares, &states[size].squares, sizeof(struct Square) * NUM_SQUARES) != 0) {
+                        printf("Squares differ");
                     }
 
-                    struct State derived = states[size];
-                    State_derive(&derived);
-                    if (memcmp(&derived, &states[size], sizeof(struct State)) != 0) {
-                        printf("Derive in random moves results in different state\n");
-                        printf("Derived version:\n");
-                        State_printDetail(&derived);
-                        printf("Reference version::\n");
-                        State_printDetail(&states[size]);
-                        printf("---\n");
-                        i = 1000;
-
-                        if (memcmp(&derived.squares, &states[size].squares, sizeof(struct Square) * NUM_SQUARES) != 0) {
-                            printf("Squares differ");
-                        }
-
-                        break;
-                    }
+                    break;
                 }
             }
         }
-
-
     }
+
+
+    // Test state serialization and deserialization
+    {
+        State_randomStart(&state);
+
+        char string[STATE_STRING_SIZE];
+        State_toString(&state, string);
+        struct State test = state;
+        State_fromString(&test, string);
+        if (memcmp(&state, &test, sizeof(struct State)) != 0) {
+            printf("Serializing and deserializing does not result in same state\n");
+        }
+    }
+
 
     printf("Done\n");
     return 0;

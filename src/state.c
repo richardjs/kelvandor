@@ -76,11 +76,10 @@ bool State_updateCaptured(struct State *state, int square) {
 
     bool crumbs[NUM_SQUARES] = {false};
 
-    // Tracks what player might own the searched region. -1 means no
-    // player determined yet. Updated when we find a bordering branch.
-    // If we find bordering branches owned by both players, no one
-    // captures the region.
-    int player = -1;
+    // Tracks what player might own the searched region. Updated when we
+    // find a bordering branch.  If we find bordering branches owned by
+    // both players, no one captures the region.
+    enum Player player = PLAYER_NONE;
 
     while (size) {
         int sq = stack[--size];
@@ -92,9 +91,9 @@ bool State_updateCaptured(struct State *state, int square) {
 
             // If P1 has a branch in this direction...
             if (state->branches[PLAYER_1] & branch) {
-                // If player is still -1, now we're checking if P1 owns
-                // the region
-                if (player < 0) {
+                // If player is still PLAYER_NONE, now we're checking if
+                // P1 owns the region
+                if (player == PLAYER_NONE) {
                     player = PLAYER_1;
                 // Else if player is already P2 (meaning we've already
                 // found a P2 branch bordering the region), no one owns
@@ -106,7 +105,7 @@ bool State_updateCaptured(struct State *state, int square) {
                 }
             // This mirrors the above P1 branch
             } else if (state->branches[PLAYER_2] & branch) {
-                if (player < 0) {
+                if (player == PLAYER_NONE) {
                     player = PLAYER_2;
                 } else if (player == PLAYER_1) {
                     goto nocapture;
@@ -145,7 +144,7 @@ bool State_updateCaptured(struct State *state, int square) {
                 if (adjacent < 0) {
                     continue;
                 }
-                if (crumbs[adjacent]) {
+                if (state->squares[adjacent].captor == player || crumbs[adjacent]) {
                     state->blocked[!player] |= (1llu << SQUARE_ADJACENT_BRANCHES[i][dir]);
                 }
             }
@@ -280,6 +279,11 @@ void State_deriveStartActions(struct State *state) {
 void State_deriveActions(struct State *state) {
     if (state->score[PLAYER_1] >= WIN_SCORE || state->score[PLAYER_2] >= WIN_SCORE) {
         state->actionCount = 0;
+
+        // TODO only do this with test flag
+        memset(&state->actions[state->actionCount], 0,
+            sizeof(struct Action) * (MAX_ACTIONS - state->actionCount));
+
         return;
     }
 
@@ -386,6 +390,14 @@ void State_derive(struct State *state) {
         state->score[player] = popcount(state->nodes[player]);
     }
 
+    // Remaining limit on squares
+    uint_fast32_t combinedNodes = state->nodes[PLAYER_1] | state->nodes[PLAYER_2];
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        struct Square *square = &state->squares[i];
+        square->remaining = square->limit;
+        square->remaining -= popcount(combinedNodes & SQUARE_ADJACENT_CORNERS[i]);
+    }
+
     // Captured squares
     for (int i = 0; i < NUM_SQUARES; i++ ) {
         State_updateCaptured(state, i);
@@ -411,6 +423,10 @@ void State_act(struct State *state, const struct Action *action) {
             state->branches[state->turn] |= (1llu << branch);
 
             state->score[state->turn] += 1;
+
+            for (int i = 0; i < 4 && CORNER_ADJACENT_SQUARES[node][i] >= 0; i++) {
+                state->squares[CORNER_ADJACENT_SQUARES[node][i]].remaining--;
+            }
 
             if (state->turn == PLAYER_1) {
                 state->turn = PLAYER_2;
@@ -459,7 +475,7 @@ void State_act(struct State *state, const struct Action *action) {
             state->resources[state->turn][GREEN] -= 2;
             state->nodes[state->turn] |= (1llu << action->data);
 
-            for (int i = 0; CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
+            for (int i = 0; i < 4 && CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
                 state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining--;
             }
 
@@ -500,6 +516,10 @@ void State_undo(struct State *state, const struct Action *action) {
 
             state->score[state->turn] -= 1;
 
+            for (int i = 0; i < 4 && CORNER_ADJACENT_SQUARES[node][i] >= 0; i++) {
+                state->squares[CORNER_ADJACENT_SQUARES[node][i]].remaining++;
+            }
+
             State_updateLargestNetworkScore(state);
 
             break;
@@ -538,7 +558,7 @@ void State_undo(struct State *state, const struct Action *action) {
             state->resources[state->turn][GREEN] += 2;
             state->nodes[state->turn] ^= (1llu << action->data);
 
-            for (int i = 0; CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
+            for (int i = 0; i < 4 && CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
                 state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining++;
             }
 

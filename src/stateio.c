@@ -3,6 +3,172 @@
 #include <stdio.h>
 
 
+void State_derive(struct State *state);
+
+
+void State_toString(const struct State *state, char string[]) {
+    int s = 0;
+    char c;
+
+    // Squares
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        if (state->squares[i].limit == 0) {
+            string[s++] = 'v';
+            string[s++] = '0';
+            continue;
+        }
+
+        const char RESOURCE_CHARS[4] = "rybg";
+        string[s++] = RESOURCE_CHARS[state->squares[i].resource];
+        string[s++] = '0' + state->squares[i].limit;
+    }
+
+    // Nodes
+    for (int i = 0; i < NUM_CORNERS; i++) {
+        c = '0';
+        if ((1llu << i) & state->nodes[PLAYER_1]) {
+            c = '1';
+        }
+        if ((1llu << i) & state->nodes[PLAYER_2]) {
+            if (c == '1') {
+                c = '?';
+            } else {
+                c = '2';
+            }
+        }
+        string[s++] = c;
+    }
+
+    // Branches
+    for (int i = 0; i < NUM_EDGES; i++) {
+        char c = '0';
+        if ((1llu << i) & state->branches[PLAYER_1]) {
+            c = '1';
+        }
+        if ((1llu << i) & state->branches[PLAYER_2]) {
+            if (c == '1') {
+                c = '?';
+            } else {
+                c = '2';
+            }
+        }
+        string[s++] = c;
+    }
+
+    // Turn
+    string[s++] = '1' + state->turn;
+
+    // Resources
+    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+        int blue = state->resources[player][BLUE];
+        if (blue > 0xff) blue = 0xff;
+        int green = state->resources[player][GREEN];
+        if (green > 0xff) green = 0xff;
+        int red = state->resources[player][RED];
+        if (red > 0xff) red = 0xff;
+        int yellow = state->resources[player][YELLOW];
+        if (yellow > 0xff) yellow = 0xff;
+
+        s += sprintf(&string[s], "%02x%02x%02x%02x", blue, green, red, yellow);
+    }
+
+    // Trade status
+    string[s++] += '0' + state->tradeDone;
+
+    string[s++] = '\0';
+}
+
+void State_fromString(struct State *state, const char string[]) {
+    State_randomStart(state);
+
+    int s = 0;
+
+    // Squares
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        enum Resource resource;
+        switch(string[s++]) {
+            case 'r':
+                resource = RED;
+                break;
+            case 'y':
+                resource = YELLOW;
+                break;
+            case 'b':
+                resource = BLUE;
+                break;
+            case 'g':
+                resource = GREEN;
+                break;
+            default:
+                resource = RED;
+        }
+        int limit = string[s++] - '0';
+        state->squares[i].resource = resource;
+        state->squares[i].limit = limit;
+        state->squares[i].remaining = limit;
+        state->squares[i].captor = PLAYER_NONE;
+    }
+
+    // Nodes
+    for (int i = 0; i < NUM_CORNERS; i++) {
+        enum Player player = PLAYER_NONE;
+        switch(string[s++]) {
+            case '1':
+                player = PLAYER_1;
+                break;
+            case '2':
+                player = PLAYER_2;
+                break;
+            default: {}
+        }
+
+        if (player != PLAYER_NONE) {
+            state->nodes[player] |= (1llu << i);
+        }
+    }
+
+    // Branches
+    for (int i = 0; i < NUM_EDGES; i++) {
+        enum Player player = PLAYER_NONE;
+        switch(string[s++]) {
+            case '1':
+                player = PLAYER_1;
+                break;
+            case '2':
+                player = PLAYER_2;
+                break;
+            default: {}
+        }
+
+        if (player != PLAYER_NONE) {
+            state->branches[player] |= (1llu << i);
+        }
+    }
+
+    // Turn
+    state->turn = string[s++] - '1';
+
+    // Resources
+    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+        unsigned int blue, green, red, yellow;
+        sscanf(&string[s], "%02x%02x%02x%02x",
+            &blue, &green, &red, &yellow
+        );
+        s += 2*4;
+        state->resources[player][BLUE] = blue;
+        state->resources[player][GREEN] = green;
+        state->resources[player][RED] = red;
+        state->resources[player][YELLOW] = yellow;
+    }
+
+    // Trade status
+    state->tradeDone = string[s] - '0';
+
+    // Derive everythine else
+    State_derive(state);
+}
+
+
 void State_print(const struct State *state) {
     char nc[NUM_CORNERS];
     for (int i = 0; i < NUM_CORNERS; i++) {
