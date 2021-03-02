@@ -9,14 +9,18 @@ export const EVENT_PLAYED = 1;
 export const EVENT_GAME_OVER = 2;
 export const EVENT_BOARD_UPDATE = 3;
 export const EVENT_MESSAGE = 4;
+export const EVENT_NODE_ADDED = 5;
+export const EVENT_ROAD_ADDED = 6;
 
-
-const MODE_PLAY = 0;
-const MODE_UNDO = 1;
+const MODE_PLACE = 0;
+const MODE_PLAY = 1;
+const MODE_UNDO = 2;
 
 export class Game {
 	constructor(boardStr) {
-		this.board = new Board(boardStr); //The main (current) board instance		
+		//this.board = new Board(); //The main (current) board instance		
+		//this.board.init();
+		this.board = Board.fromString('R2G1B2R3G2Y2V0G3Y1B3R1B1Y3000000000000000000000000000000000000000000000000000000000000010;0;0;0;0;0;0;0');
 		//boardStr = this.board.toString(); //Update
 		
 		//Add initial state
@@ -108,7 +112,7 @@ export class Game {
 	}
 
 
-	redoMove() {	
+	redoMove =() =>{	
 		//if (this.undoHistory.length > 0) {	
 		//	var oldTurn = this.board.turn;
 		//	var savedStr = this.undoHistory.pop();
@@ -130,16 +134,43 @@ export class Game {
 
 
 	//Helper function keep track of game history
-	logCurrentState(board) {
+	logCurrentState =(board) => {
 		//var boardStr = board.toString();
 		//this.history.push(boardStr);
         //
 		//this.memory[boardStr] = true;
 	}
 
+	changeTurn = () => {
+		this.board.changeTurn();
+		
+	}
+
+	addNode = (nid) => {			
+		if (this.board.addNode(nid)) {
+			this.gameEvents[EVENT_NODE_ADDED](nid, this.board.turn);
+		}
+		else {
+			this.gameEvents[EVENT_MESSAGE]('Invalid Node');
+		}
+	}
+
+	addRoad = (rid) => {
+		if (this.board.addRoad(rid)) {
+			this.gameEvents[EVENT_ROAD_ADDED](rid, this.board.turn);
+		}
+		else {
+			this.gameEvents[EVENT_MESSAGE]('Invalid Road');
+		}
+	}
+	
+	shuffleTiles = () => {
+		this.board.shuffle();		
+		this.gameEvents[EVENT_BOARD_UPDATE](this.board);
+	}
 
 	//Player functions
-	play() {
+	play =() => {
 		
 		var board = this.board;
 		var turn = board.getTurn();
@@ -160,7 +191,7 @@ export class Game {
 		//}		
 	}
 
-	onPlayed(move) {
+	onPlayed =(move) => {
 		var self = game;	
 		self.mode = MODE_PLAY;			
 		var board = self.board;	
@@ -182,28 +213,18 @@ export class Game {
 		}
 	}
 	
-	broadcast(event, args) {
+	broadcast =(event, args) => {
 		this.gameEvents[event](args);
 	}
 
 
-	sendMessage (msg) {
+	sendMessage = (msg) => {
 		this.gameEvents[EVENT_MESSAGE](msg);
 	}
 
-
-	//Game.prototype.onPlayerConfig = function(player) {
-	//	if (this.players[player] == PLAYER_NETWORK) NetworkPlayer.configPlayer(player);
-	//	else if (this.players[player] == PLAYER_RANDOM) RandomPlayer.configPlayer(player);
-	//	else if (this.players[player] == PLAYER_THESEUS) TheseusPlayer.configPlayer(player);
-	//			
-	//}
 	
-	//swapPlayers() {
-	//	var tmpPlayer = this.players[PLAYER1];
-	//	this.players[PLAYER1] = this.players[PLAYER2];
-	//	this.players[PLAYER2] = tmpPlayer;
-	//}
+	
+	
 
 
 }

@@ -7,18 +7,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!--<link rel="shortcut icon" href="img/favicon.ico" />	
   <link rel="stylesheet" href="css/main.css"/> -->
-  <style>canvas {border: 1px solid black; }</style>
-  
-  <script src="lib/dat-gui-min.js"></script>
-  <script src="lib/pixi.min.js"></script>    
-  
-  <script type="module" src="src/core/constants.js"></script> 
-  <script type="module" src="src/core/game.js"></script> 
-  <script type="module" src="src/ui/menu.js"></script> 
-  <script type="module" src="src/index.js"></script> 
-  
+  <style>
+	.tile, .node, .road {
+		stroke: black;
+		z-index: 5;
+	}
+
+	.node.empty:hover{
+		fill:#c0c0c0;
+	}
+	
+	.road {
+		
+	}
+	.road.empty:hover {
+		fill:#bbbbbb;
+	}
+	
+	.label {
+		font-family: verdana;
+		font-size: 16pt;
+		pointer-events: none;
+		z-index: 10;
+	}
+	
+	.lblTrade {
+		fill: white;
+		font-family: verdana;
+		font-size: 12pt;
+		font-weight: bold;
+		pointer-events: none;
+		z-index: 10;
+	}
+	.btnTrade:hover {
+		fill:#c0c0c0;
+		cursor: pointer;
+	}
+	
+  </style>
+  <script type="module" src="src/index.js"></script>  
 </head>
-<body>          
- <link rel="stylesheet" href="lib/dat-gui-light.css"/>
+<body>           
 </body>
 </html>

@@ -1,58 +1,92 @@
-import * as CONST_UI from './constants-ui.js';
-const SIZE_TILE = CONST_UI.SIZE_TILE;
-const UNIT_TILE = 50;
-
-const SIZE_DOT = 10;
+import { html, Component } from '../../lib/preact.js';
+import { SIDE_NONE } from '../core/constants.js';
+import {SIZE_TILE, SIZE_TILE_DOT, SIDE_COLORS, RES_COLORS, RES_COLORS_HOVER} from './constants-ui.js';
 
 const TILE_HALF = SIZE_TILE/2;
 const TILE_THIRD = SIZE_TILE/3;
 const TILE_TWO_THIRDS = 2*SIZE_TILE/3;
 
-const COLOR_OUTLINE = 0xFFFFFF;
-const COLOR_DOT = 0xFFFFFF;
-const RES_COLORS = [0xC0C0C0, 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00];
+const SIZE_EXHAUSTED = 20;
+const SIZE_CAPTURED = 15;
 
-
-
-//Create tile 
-export function renderTile(app, r, c, resColor, resVal) {
-	var tile = new PIXI.Graphics();
+export class TileUI extends Component {
+	state = {}
 	
-	//The x,y coordinates are the top,left of the tile
-	var x = c * UNIT_TILE; 
-	var y = r * UNIT_TILE;
-	
-	//Resource colors
-	tile.lineStyle(2, COLOR_OUTLINE, 1);
-	tile.beginFill(RES_COLORS[resColor]);
-	tile.drawRect(x, y, SIZE_TILE, SIZE_TILE);
-	tile.endFill();	
-	
-	//Add Resource values (dots)
-	tile.lineStyle(0); // draw a circle, set the lineStyle to zero so the circle doesn't have an outline	
-	
-	if (resVal == 1) { //Single Dot
-		createDot(tile, x+TILE_HALF, y+TILE_HALF); 
+	constructor() {
+		super();				
 	}
-	else if (resVal == 2) { //Double Dots
-		createDot(tile, x+TILE_TWO_THIRDS, y+TILE_HALF); 
-		createDot(tile, x+TILE_THIRD, y+TILE_HALF); 	
+	
+	componentDidMount = () => {		
+		this.setState({fill:RES_COLORS[this.props.color]});
 	}
-	else if (resVal == 3) { //Triple Dots		
-		createDot(tile, x+TILE_HALF, y+TILE_THIRD);
-		createDot(tile, x+TILE_TWO_THIRDS, y+TILE_TWO_THIRDS); 
-		createDot(tile, x+TILE_THIRD, y+TILE_TWO_THIRDS); 
+	
+	onMouseOver = (e) => {
+		
+		this.setState({fill:RES_COLORS_HOVER[this.props.color]});
 	}
-	//else vacant
 	
-	app.stage.addChild(tile);
+	onMouseOut = (e) => {
+		this.setState({fill:RES_COLORS[this.props.color]});
+	}
 	
-	return tile;
-}
-
-function createDot(tile, x, y) {
-	tile.beginFill(COLOR_DOT, 1);
+	renderDot(x, y) {
+		
+		return (
+			html`<circle cx=${x} cy=${y} r=${SIZE_TILE_DOT} fill="#ffffff" />`
+		);
+	}
 	
-	tile.drawCircle(x, y, SIZE_DOT);	
-	tile.endFill();
+	renderExhausted(x, y) {
+		
+		return (
+			html`<circle cx=${x+TILE_HALF} cy=${y+TILE_HALF} r=${SIZE_EXHAUSTED} fill="#333333" />`
+		);
+	}
+	
+	renderBackground = () => {	
+		var captured = this.props.captured;
+		var style = (captured == SIDE_NONE)? '' : 'stroke:' + SIDE_COLORS[captured] + '; stroke-width:' + SIZE_CAPTURED;		
+		
+		return (
+			html`
+				<rect 
+					class="tile"
+					x=${this.props.x} 
+					y=${this.props.y} 		
+					width=${SIZE_TILE}
+					height=${SIZE_TILE}
+					fill=${this.state.fill}
+					onclick=${this.props.click}
+					onmouseover=${this.onMouseOver}
+					onmouseout=${this.onMouseOut}
+					style=${style}
+				/>				
+			`
+		);
+	}
+	
+	render() {
+		//console.log(this.props.exhausted);
+		var value = this.props.value;
+		var x = this.props.x;
+		var y = this.props.y;
+		
+		var dots = [];
+		if (value == 1) { //Single Dot
+			dots.push(this.renderDot(x+TILE_HALF, y+TILE_HALF)); 
+		}
+		else if (value == 2) { //Double Dots			
+			dots.push(this.renderDot(x+TILE_TWO_THIRDS, y+TILE_HALF));
+			dots.push(this.renderDot(x+TILE_THIRD, y+TILE_HALF));			
+		}
+		else if (value == 3) { //Triple Dots		
+			dots.push(this.renderDot(x+TILE_HALF, y+TILE_THIRD));
+			dots.push(this.renderDot(x+TILE_TWO_THIRDS, y+TILE_TWO_THIRDS)); 
+			dots.push(this.renderDot(x+TILE_THIRD, y+TILE_TWO_THIRDS)); 
+		}
+		var shapes = [this.renderBackground(), dots];
+		if (this.props.exhausted) shapes.push(this.renderExhausted(x,y));
+		return shapes;
+	}
+	
 }
