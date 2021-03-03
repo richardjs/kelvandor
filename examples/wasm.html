@@ -5,9 +5,9 @@
             var Module = {
                 onRuntimeInitialized: function() {
                     let state = new kelvandor.State();
+                    console.log(state.toString());
 
                     // See https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html#memory-management
-                    console.log('Deleting state...');
                     state.delete();
                 }
             };

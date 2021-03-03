@@ -43,6 +43,21 @@ class WasmState {
         return vec;
     }
 
+    bool act(string str) {
+        struct Action action;
+        Action_fromString(&action, str.c_str());
+
+        for (int i = 0; i < state.actionCount; i++) {
+            if (action.type == state.actions[i].type
+                    && action.data == state.actions[i].data) {
+                State_act(&state, &action);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     int score(int player) {
         return state.score[player];
     }
@@ -65,6 +80,7 @@ EMSCRIPTEN_BINDINGS(kelvandor) {
         .function("fromString", &WasmState::fromString)
         .function("toString", &WasmState::toString)
         .function("actions", &WasmState::actions)
+        .function("act", &WasmState::act)
         .function("print", &WasmState::print)
         ;
 }
