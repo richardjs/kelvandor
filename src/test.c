@@ -434,6 +434,18 @@ int main() {
 
                     return 1;
                 }
+
+                for (int a = 0; a < state.actionCount; a++) {
+                    char actionString[ACTION_STRING_SIZE];
+                    Action_toString(&state.actions[a], actionString);
+                    struct Action action;
+                    Action_fromString(&action, actionString);
+
+                    if (memcmp(&action, &state.actions[a], sizeof(struct Action)) != 0) {
+                        printf("Action differs after serialization and deserialization: %s\n", actionString);
+                        return 1;
+                    }
+                }
             }
 
             while (size > 1) {

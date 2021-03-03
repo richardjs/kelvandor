@@ -98,6 +98,7 @@ void State_undo(struct State *state, const struct Action *action);
 /* Interface */
 
 void Action_toString(const struct Action *action, char string[]);
+void Action_fromString(struct Action *action, const char string[]);
 void State_toString(const struct State *state, char string[]);
 void State_fromString(struct State *state, const char string[]);
 

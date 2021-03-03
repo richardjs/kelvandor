@@ -3,6 +3,10 @@
 #include <stdio.h>
 
 
+const char DIRECTION_CHARS[] = {'n', 's', 'e', 'w'};
+const char RESOURCE_CHARS[4] = "rybg";
+
+
 void State_derive(struct State *state);
 
 
@@ -12,32 +16,118 @@ void Action_toString(const struct Action *action, char string[]) {
             int node = action->data & 0b11111;
             int dir = action->data >> 6;
 
-            const char DIRECTION_CHARS[] = {'n', 's', 'e', 'w'};
             sprintf(string, "s%02d%c", node, DIRECTION_CHARS[dir]);
             break;
         }
+
         case TRADE: {
             int in1 = (action->data >> 0)  & 0b11;
             int in2 = (action->data >> 2)  & 0b11;
             int in3 = (action->data >> 4)  & 0b11;
             int out = (action->data >> 6)  & 0b11;
 
-            const char RC[4] = "rybg";
-            sprintf(string, "t%c%c%c%c", RC[in1], RC[in2], RC[in3], RC[out]);
+            sprintf(string, "t%c%c%c%c",
+                RESOURCE_CHARS[in1], RESOURCE_CHARS[in2],
+                RESOURCE_CHARS[in3], RESOURCE_CHARS[out]);
             break;
         }
+
         case BRANCH: {
             sprintf(string, "b%02d", action->data);
             break;
         }
+
         case NODE: {
             sprintf(string, "n%02d", action->data);
             break;
         }
+
         case END: {
-            string[0] = 's';
+            string[0] = 'e';
             string[1] = '\0';
             break;
+        }
+    }
+}
+
+
+void Action_fromString(struct Action *action, const char string[]) {
+    switch (string[0]) {
+        case 's': {
+            int node;
+            char dir;
+            sscanf(string, "s%02d%c", &node, &dir);
+
+            int data = node & 0b11111;
+            if (data > NUM_CORNERS) {
+                data = 0;
+            }
+            for (int i = 0; i < 4; i++) {
+                if (dir == DIRECTION_CHARS[i]) {
+                    data |= i << 6;
+                    break;
+                }
+            }
+
+            action->type = START_PLACE;
+            action->data = data;
+
+            break;
+        }
+
+        case 't': {
+            char in1c, in2c, in3c, outc;
+            sscanf(string, "t%c%c%c%c", &in1c, &in2c, &in3c, &outc);
+
+            int in1=0, in2=0, in3=0, out=0;
+            for (int i = 0; i < NUM_RESOURCES; i++) {
+                if (RESOURCE_CHARS[i] == in1c) in1 = i;
+                if (RESOURCE_CHARS[i] == in2c) in2 = i;
+                if (RESOURCE_CHARS[i] == in3c) in3 = i;
+                if (RESOURCE_CHARS[i] == outc) out = i;
+            }
+
+            int data = 0;
+            data |= in1 << 0;
+            data |= in2 << 2;
+            data |= in3 << 4;
+            data |= out << 6;
+
+            action->type = TRADE;
+            action->data = data;
+
+            break;
+        }
+
+        case 'b': {
+            int data;
+            sscanf(string, "b%02d", &data);
+
+            action->type = BRANCH;
+            action->data = data;
+            if (action->data > NUM_EDGES) {
+                action->data = 0;
+            }
+
+            break;
+        }
+
+        case 'n': {
+            int data;
+            sscanf(string, "n%02d", &data);
+
+            action->type = NODE;
+            action->data = data;
+            if (action->data > NUM_CORNERS) {
+                action->data = 0;
+            }
+
+            break;
+        }
+
+        case 'e': {
+            action->type = END;
+            action->data = 0;
         }
     }
 }
