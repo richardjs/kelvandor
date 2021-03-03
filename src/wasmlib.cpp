@@ -32,7 +32,8 @@ class WasmState {
         return str;
     }
 
-    vector<string> actions() {
+    // Use the JS state.actions() instead of this (see pre.js)
+    vector<string> actionVector() {
         vector<string> vec;
         for (int i = 0; i < state.actionCount; i++) {
             char cstr[ACTION_STRING_SIZE];
@@ -79,7 +80,7 @@ EMSCRIPTEN_BINDINGS(kelvandor) {
         .constructor<string>()
         .function("fromString", &WasmState::fromString)
         .function("toString", &WasmState::toString)
-        .function("actions", &WasmState::actions)
+        .function("actionVector", &WasmState::actionVector)
         .function("act", &WasmState::act)
         .function("print", &WasmState::print)
         ;

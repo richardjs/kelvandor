@@ -7,6 +7,11 @@
                     let state = new kelvandor.State();
                     console.log(state.toString());
 
+                    console.log(state.actions());
+                    state.act(state.actions()[0]);
+
+                    console.log(state.toString());
+
                     // See https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html#memory-management
                     state.delete();
                 }

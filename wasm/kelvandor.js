@@ -17,7 +17,21 @@ var Module = typeof Module !== 'undefined' ? Module : {};
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// {{PRE_JSES}}
+let callback = Module['onRuntimeInitialized'];
+Module['onRuntimeInitialized'] = function() {
+    Module.State.prototype.actions = function() {
+        let array = new Array();
+        let actions = this.actionVector();
+        for (let i = 0; i < actions.size(); i++) {
+            array.push(actions.get(i));
+        }
+        actions.delete();
+        return array;
+    };
+    callback();
+}
+
+
 
 // Sometimes an existing Module object exists with properties
 // meant to overwrite the default module functionality. Here
