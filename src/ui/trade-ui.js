@@ -1,5 +1,5 @@
 import { html, Component } from '../../lib/preact.js';
-import {SIZE_TRADE_W, SIZE_TRADE_H, COUNT_TRADE} from './constants-ui.js';
+import {SIZE_TRADE_W, SIZE_TRADE_H, COUNT_TRADE, RES_COLORS, RES_COLORS_HOVER, RES_COLORS_DISABLED} from './constants-ui.js';
 
 const SIZE_DOT = 10;
 const UNIT_DOT = SIZE_DOT*2;
@@ -7,49 +7,74 @@ const UNIT_DOT = SIZE_DOT*2;
 const BUTTON_LEFT = 0;
 const BUTTON_RIGHT = 2;
 
-export class TradeUI extends Component {
-	state = {dots:0}
+export class TradeUI extends Component {			
 	
-	onClick = (e) => {
-		var dots;
+	constructor() {
+		super();				
+	}
+
+	componentDidMount = () => {		
+		var color = RES_COLORS[this.props.color];
+		this.setState({fillCenter:color, fillTrade:color});
+	}
+	
+	onMouseOverCenter = (e) => {		
+		this.setState({fillCenter:RES_COLORS_HOVER[this.props.color]});		
+	}
+	
+	onMouseOutCenter = (e) => {					
+		this.setState({fillCenter:RES_COLORS[this.props.color]});		
+	}
+
+	onMouseOverTrade = (e) => {		
+		this.setState({fillTrade:RES_COLORS_HOVER[this.props.color]});		
+	}
+	
+	onMouseOutTrade = (e) => {		
+		this.setState({fillTrade:RES_COLORS[this.props.color]});		
+	}
+
+	onClick = (e) => {		
 		
 		if (e.button == BUTTON_LEFT) {
-			dots = this.state.dots+1;
-			if (dots > COUNT_TRADE) dots = 0;
+			//dots = this.state.dots+1;
+			//if (dots > COUNT_TRADE) dots = 0;
+			this.props.onDotAdded(this.props.resid);
 		}
-		else {
-			dots = this.state.dots-1;
-			if (dots < 0) dots = 0;
-		}
-		this.setState({dots:dots});
+		//else {
+		//	dots = this.state.dots-1;
+		//	if (dots < 0) dots = 0;
+		//}		
 	}
 	
 	onTrade = (e) => {
-		console.log('trade');
-		this.props.onTrade(this.props.vid);
+		//console.log('trade click');
+		this.props.onTrade(this.props.resid);
 	}
 	
 	renderDots = (y) => {
 		var dots = [];
-		var color = this.props.color;				
-		for (var i = 0; i < this.state.dots; i++) {
+		var color = RES_COLORS[this.props]
+		for (var i = 0; i < this.props.dots; i++) {
 			var x = this.props.x + (i*UNIT_DOT);
 			
-			dots.push(html`<rect x=${x} y=${y} width=${SIZE_DOT} height=${SIZE_DOT} fill=${color}/>`);
+			dots.push(html`<rect x=${x} y=${y} width=${SIZE_DOT} height=${SIZE_DOT} fill=${this.state.fillCenter}/>`);
 		}
 		return dots;
 	}
 	renderCenter = (x,y) => {
 		
 		return (
-			html`<rect class="trade"
+			html`<rect class="btn"
 					x=${x}
 					y=${y}
 					width=${SIZE_TRADE_W}
 					height=${SIZE_TRADE_H}
-					fill=${this.props.color}
+					fill=${this.state.fillCenter}
 					onclick=${this.onClick}
 					oncontextmenu=${this.onClick}
+					onmouseover=${this.onMouseOverCenter}
+					onmouseout=${this.onMouseOutCenter}
 				/>`					
 		);
 	}
@@ -60,7 +85,7 @@ export class TradeUI extends Component {
 				<text class="label"
 					x=${x+10}
 					y=${y+30} 							
-				>${this.props.value}</text>
+				>${this.props.value-this.props.dots}</text>
 			`
 		);
 	}
@@ -68,15 +93,17 @@ export class TradeUI extends Component {
 	renderTrade = (x,y) => {
 		return (
 			html`<rect 
-					class="btnTrade"
+					class="btn"
 					x=${x}
 					y=${y}
 					rx="5"
 					ry="5"
 					width=${SIZE_TRADE_W}
 					height=${25}
-					fill=${this.props.color}
-					onclick=${this.onTrade}					
+					fill=${this.state.fillTrade}
+					onclick=${this.onTrade}	
+					onmouseover=${this.onMouseOverTrade}
+					onmouseout=${this.onMouseOutTrade}				
 				/>
 				<text class="lblTrade"
 					x=${x+10}

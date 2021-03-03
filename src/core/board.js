@@ -13,7 +13,6 @@ const ITEM_NODE = 2;
 const ITEM_ROAD = 3;
 
 const BASE_RES = 16;
-const DELIM_RES = ';';
 
 
 //Shorthand for array initialization
@@ -78,16 +77,16 @@ var defaultTileVals = [
 
 
 
-const defaultState = 'R2G1B2R3G2Y2V0G3Y1B3R1B1Y30000000000000000000000000000000000000000000000000000000000010;0;0;0;0;0;0;0';
+export const DEFAULT_BOARD_STATE = 'R2G1B2R3G2Y2V0G3Y1B3R1B1Y3222222222222222222222222222222222222222222222222222222222222000000000000000000';
 export class Board {
 	constructor() {			
 		this.turn = constants.SIDE_1;
-		this.phase = constants.PHASE_PLACE1_1;		
+		this.phase = constants.PHASE_PLAY;		
 		this.tiles = [];
 		this.nodes = [];
 		this.roads = [];
 		this.scores = [0, 0];
-		this.res = [[0,0,0,0],[0,0,0,0]]; //Alpha order
+		this.res = [[4,4,2,2,],[4,4,2,2]]; 
 			
 	}
 	
@@ -115,7 +114,7 @@ export class Board {
 				}
 			}
 		}		
-		console.log(this.toString());		
+		//console.log(this.toString());		
 	}
 	
 	shuffle = () => { //Fisher-Yates
@@ -182,15 +181,20 @@ export class Board {
 		board.turn = boardStr[s];
 		s++;
 		
-		//Resources
-		var resStr = boardStr.substr(s);
-		var resources = resStr.split(DELIM_RES); //E.g. 3;0;1;A;B;5;2;4
+		//Resources			
 		for (var i = 0; i < constants.COUNT_RES; i++) {
-			board.res[constants.SIDE_1-1][i] = Number.parseInt(resources[i], BASE_RES); //Hexadecimal counts
-			board.res[constants.SIDE_2-1][i] = Number.parseInt(resources[i+constants.COUNT_RES], BASE_RES); //Hexadecimal counts
+			var resCount = Number.parseInt(boardStr.substr(s,2), BASE_RES);
+			board.res[constants.SIDE_1][i] = resCount //Hexadecimal counts			
+			s += 2;
+		}
+		for (var i = 0; i < constants.COUNT_RES; i++) {		
+			var resCount = Number.parseInt(boardStr.substr(s,2), BASE_RES);	
+			board.res[constants.SIDE_2][i] = resCount //Hexadecimal counts
+			s += 2;
 		}
 		
-		//Calculate score, other attributes
+		
+		//Calculate score, other attributes?
 		return board;
 	}
 	
@@ -214,13 +218,13 @@ export class Board {
 		}
 		
 		//Resources
-		var res1 = [];
-		var res2 = [];
+		var resStr1 = '';		
+		var resStr2 = '';
 		for (var i = 0; i < constants.COUNT_RES; i++) {
-			res1.push(this.res[constants.SIDE_1-1][i].toString(BASE_RES)); //Hexadecimal counts
-			res2.push(this.res[constants.SIDE_2-1][i].toString(BASE_RES)); //Hexadecimal counts
+			resStr1 += this.res[constants.SIDE_1][i].toString(BASE_RES).padStart(2, '0');			
+			resStr2 += this.res[constants.SIDE_2][i].toString(BASE_RES).padStart(2, '0');			
 		}
-		var resStr = res1.join(DELIM_RES) + DELIM_RES + res2.join(DELIM_RES);
+				
 		
 		return (
 			tilesStr + 		//Tiles
@@ -228,37 +232,57 @@ export class Board {
 			roadsStr + 		//Roads
 			this.phase +   //Phase
 			this.turn + 	//Turn
-			resStr 			//Resources
+			resStr1  +		//Player 1 resources
+			resStr2  		//Player 2 resources
 		);
 	}
 	
-	addNode = (nid) => {
+	addNode = (nid) => {		
+		var side = this.turn;		
 		if (!nidInBounds(nid)) return false;
 		else if (this.nodes[nid].side != constants.SIDE_NONE) return false;
 		
+
+		if (!this.canAffordNode(side)) return false;
+
 		//Add node
 		this.nodes[nid].side = this.turn; 
 		
-		var tids = adj.TILES_ADJ_NODE[nid];
+		//Pay for node
+		this.res[side][constants.RES_GREEN]-=2;
+		this.res[side][constants.RES_YELLOW]-=2;
+		
+
 		//Exhaust tiles
+		var tids = adj.TILES_ADJ_NODE[nid];		
 		for (var t = 0; t < tids.length; t++) {
 			var tid = tids[t];			
 			var tile = this.tiles[tid];
 			if (tile.captured != constants.SIDE_NONE) continue;//Don't exhaust if captured
-			else if (tile.resCol == constants.RES_VACANT) continue;			
+			else if (tile.color == constants.RES_VACANT) continue;			
 			var nodeCount = this.countNodesOnTile(tid);			
-			if (nodeCount > tile.resVal) this.tiles[tid].isExhausted = true;
+			if (nodeCount > tile.value) this.tiles[tid].isExhausted = true;
 			
 		}
 		
 		return true;
 	}
 	
-	addRoad = (rid) => {
+	addRoad = (rid) => {		
+		var side = this.turn;
+
 		if (!ridInBounds(rid)) return false;
 		else if (this.roads[rid].side != constants.SIDE_NONE) return false;
+		else if (!this.canAffordRoad(side)) return false;
+
+		//Add road
 		this.roads[rid].side = this.turn;
 		
+		//Pay for road
+		this.res[side][constants.RES_BLUE]--;
+		this.res[side][constants.RES_RED]--;
+
+
 		//Check for capture
 		var tids = adj.TILES_ADJ_ROAD[rid];
 		for (var t = 0; t < tids.length; t++) {
@@ -281,7 +305,7 @@ export class Board {
 		var nids = adj.NODES_ADJ_TILE[tid];
 		for (var n = 0; n < constants.COUNT_NODES_PER_TILE; n++) {
 			var nid = nids[n];
-			if (this.nodes[nid].side) count++;			
+			if (this.nodes[nid].side != constants.SIDE_NONE) count++;			
 		}
 		return count;
 	}
@@ -299,27 +323,36 @@ export class Board {
 	
 	
 	harvest = () => {
-		var side = this.turn-1;
+		var side = this.turn;
 		//Update resources for each element held
 		for (var tid = 0; tid < this.tiles.length; tid++) {
 			var tile = this.tiles[tid];
-			if (tile.isCaptured) this.res[side][tile.resCol] += tile.resVal;
-			else if (tile.isExhausted) continue;
+			//if (tile.isCaptured) this.res[side][tile.color] += tile.value; //Captured
+			
+			if (tile.isExhausted) continue; //Exhausted
 			
 			var nids = adj.NODES_ADJ_TILE[tid];
 			for (var n = 0; n < constants.COUNT_NODES_PER_TILE; n++) {
 				var nid = nids[n];
 				var node = this.nodes[nid];				
-				if (node.side != constants.SIDE_NONE) this.res[node.side-1][tile.resCol]++;
+				if (node.side != constants.SIDE_NONE) {
+					this.res[node.side][tile.color]++;					
+				}
 			}
 			
 		}
 	}
 	
 	changeTurn = () => {
-		this.turn = (this.turn == constants.SIDE_1)? constants.SIDE_2 : constants.SIDE_1;
 		this.calcScore(constants.SIDE_1);
 		this.calcScore(constants.SIDE_2);
+		if (this.scores[this.turn] >= constants.SCORE_WIN) {
+			alert('Game Over');
+		}
+		else {
+			this.turn = (this.turn == constants.SIDE_1)? constants.SIDE_2 : constants.SIDE_1;
+			this.harvest();
+		}
 	}
 	
 	calcScore = (side) => {
@@ -338,11 +371,32 @@ export class Board {
 			
 		//+2 longestRoad
 		
-		this.scores[side-1] = score;
+		this.scores[side] = score;
 	}
 	
 	calcLongest = () => {
 		
+	}
+
+	trade = (tradeResids) => {
+		//console.log(tradeResids);
+		var side = this.turn;
+		this.res[side][tradeResids[0]]--;
+		this.res[side][tradeResids[1]]--;
+		this.res[side][tradeResids[2]]--;
+		this.res[side][tradeResids[3]]++;
+		return true;
+
+	}
+
+	canAffordNode = (side) => {
+		if (this.res[side][constants.RES_GREEN] >= 2 && this.res[side][constants.RES_YELLOW] >= 2) return true;
+		else return false;
+	}
+
+	canAffordRoad = (side) => {
+		if (this.res[side][constants.RES_BLUE] >= 1 && this.res[side][constants.RES_RED] >= 1) return true;
+		else return false;
 	}
 }
 

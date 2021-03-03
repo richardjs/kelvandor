@@ -1,5 +1,4 @@
-export const ORIENTATION_VERTICAL = 0;
-export const ORIENTATION_HORIZONTAL = 1;
+import {ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL} from './constants.js';
 
 const I = -1; //Invalid shorthand for instantiation
 const V = ORIENTATION_VERTICAL; //Vertical 

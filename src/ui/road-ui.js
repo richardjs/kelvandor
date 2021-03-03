@@ -16,8 +16,8 @@ export class RoadUI extends Component {
 	
 	render() {		
 		var cssClass = (this.props.side == SIDE_NONE)? 'road empty' : 'road';
-		var roadW = (this.props.side)? SIZE_ROAD_W : SIZE_ROAD_EMPTY_W;
-		var roadH = (this.props.side)? SIZE_ROAD_H : SIZE_ROAD_EMPTY_H;
+		var roadW = (this.props.side == SIDE_NONE)? SIZE_ROAD_EMPTY_W : SIZE_ROAD_W;
+		var roadH = (this.props.side == SIDE_NONE)? SIZE_ROAD_EMPTY_H : SIZE_ROAD_H;
 		var width = (this.props.orient == ORIENTATION_HORIZONTAL)? roadW : roadH;
 		var height = (this.props.orient == ORIENTATION_HORIZONTAL)? roadH : roadW;
 		var halfW = width/2;

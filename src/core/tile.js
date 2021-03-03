@@ -23,10 +23,10 @@ COLOR_CHARS[RES_GREEN] = 'G';
 COLOR_CHARS[RES_YELLOW] = 'Y';
 
 export class Tile {
-	constructor(resCol, resVal) {		
+	constructor(color, value) {		
 		
-		this.resCol = resCol;
-		this.resVal = resVal;				
+		this.color = color;
+		this.value = value;				
 		
 		this.isExhausted = false;
 		this.captured = SIDE_NONE;	
@@ -49,6 +49,6 @@ export class Tile {
 	}
 	
 	toString = () => {		
-		return COLOR_CHARS[this.resCol] + this.resVal;
+		return COLOR_CHARS[this.color] + this.value;
 	}
 }

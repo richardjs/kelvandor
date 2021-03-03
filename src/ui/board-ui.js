@@ -1,6 +1,6 @@
 import * as constants from '../core/constants.js';
 import {UNIT_TILE, UNIT_NODE, UNIT_ROAD, RES_COLORS, SIDE_COLORS} from './constants-ui.js';
-import {Board} from '../core/board.js';
+import {Board, DEFAULT_BOARD_STATE} from '../core/board.js';
 
 
 import { html, Component } from '../../lib/preact.js';
@@ -22,7 +22,9 @@ export class BoardUI extends Component {
 		document.addEventListener('keydown', this.onKeyDown);
 		document.addEventListener('contextmenu', this.onRightClick);		    
 		
-		this.board = Board.fromString('R2G1B2R3G2Y2V0G3Y1B3R1B1Y3000000000000000000000000000000000000000000000000000000000000010;0;0;0;0;0;0;0');
+		//this.board = Board.fromString(DEFAULT_BOARD_STATE);
+		this.board = new Board();
+		this.board.init();
 	}
 		
 	
@@ -34,8 +36,8 @@ export class BoardUI extends Component {
 			this.forceUpdate();	
 		}
 		else {
-			alert('invalid');
-		//	this.gameEvents[EVENT_MESSAGE]('Invalid Node');
+			alert('Unable to add node');
+			//this.gameEvents[EVENT_MESSAGE]('Invalid Node');
 		}		
 	}
 	
@@ -44,8 +46,8 @@ export class BoardUI extends Component {
 			this.forceUpdate();	
 		}
 		else {
-			alert('invalid');
-		//	this.gameEvents[EVENT_MESSAGE]('Invalid Node');
+			alert('unable to add road');
+			//this.gameEvents[EVENT_MESSAGE]('Invalid Node');
 		}		
 	}
 	
@@ -73,15 +75,27 @@ export class BoardUI extends Component {
 	
 	onChangeTurn = (e) => {
 		this.board.changeTurn();
+		var boardStr = this.board.toString().toLowerCase();
+		console.log('nar', boardStr);
+		
+		let state = new kelvandor.State();
+		state.fromString(boardStr);
+		console.log('kel', state.toString());			
+		
+		 
+		state.delete();
 		this.forceUpdate();		
 	}
 	
-	onScore = (e) => {
-		this.board.calcScore(constants.SIDE_1);
-		this.board.calcScore(constants.SIDE_2);
-		this.forceUpdate();		
-	}
 	
+
+	onTrade = (tradeResids) => {
+		
+		if (this.board.trade(tradeResids)) {
+
+		}
+		//else alert('invalid trade');
+	}
 	
 	//Rendering methods
 	renderTiles = () => {
@@ -91,8 +105,8 @@ export class BoardUI extends Component {
 			var tile = this.board.tiles[tid];
 			var x = constants.TID_TO_C[tid] * UNIT_TILE;
 			var y = constants.TID_TO_R[tid] * UNIT_TILE;
-			var color = tile.resCol;
-			var value = tile.resVal;
+			var color = tile.color;
+			var value = tile.value;
 			var exhausted = tile.isExhausted;
 			var captured = tile.captured;
 			tileUIs.push(html`<${TileUI} x=${x} y=${y} color=${color} value=${value} exhausted=${exhausted} captured=${captured}/>`)
@@ -128,28 +142,33 @@ export class BoardUI extends Component {
 	}
 	
 	
+	renderRes = (side) => {		
+		var res = this.board.res[side];
+		if (this.board.phase != constants.PHASE_PLAY) return;
+		return html`<${ResUI} side=${side} res=${res} x="65" y="620" onTrade=${this.onTrade}/>`;
+	}
 	
-	render () {				
-		var res = this.board.res[0];
+	
+
+	render () {						
 		var turn = this.board.turn == constants.SIDE_1? 'Player 1' : 'Player 2';
 		return (		
 			html`
 				<div style="float:right">
-				<button onclick=${this.onShuffle}>Shuffle</button><br/>
-				<button onclick=${this.onHarvest}>Harvest</button><br/>
-				<button onclick=${this.onScore}>Score</button><br/>
-				<button onclick=${this.onChangeTurn}>Change Turn</button>
+				<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button><br/>
+				
 				</div>
+				<button id="btnDone" onclick=${this.onChangeTurn}>Done</button>
 				
 				<svg width="800" height="800" style="border:1px solid black;">
 					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[0]}/>
 					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[1]}/>
-					<${TurnUI} x="10" y="40" label="Turn:" value=${turn}/>
+					<${TurnUI} x="10" y="575" label="Turn:" value=${turn}/>
 					
 					${this.renderTiles()}
 					${this.renderRoads()}
 					${this.renderNodes()}
-					<${ResUI} res=${res} x="85" y="620"}/>
+					${this.renderRes(this.board.turn)}								
 				</svg>				
 			`
 		);

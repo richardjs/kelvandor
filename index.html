@@ -17,9 +17,6 @@
 		fill:#c0c0c0;
 	}
 	
-	.road {
-		
-	}
 	.road.empty:hover {
 		fill:#bbbbbb;
 	}
@@ -39,13 +36,33 @@
 		pointer-events: none;
 		z-index: 10;
 	}
-	.btnTrade:hover {
-		fill:#c0c0c0;
+	.btn:hover {	
 		cursor: pointer;
 	}
 	
+	#btnDone {
+		position: absolute;
+		left: 600px;
+		top: 627px;
+		width: 100px;
+		height: 83px;
+		cursor: pointer;
+	}
+
+	#btnShuffle {
+		position: absolute;
+		left: 820px;		
+		cursor: pointer;
+	}
   </style>
-  <script type="module" src="src/index.js"></script>  
+  <script type="module" src="src/index.js"></script>    
+  <script>
+	 var Module = {
+		onRuntimeInitialized: function() {}
+	};
+	let kelvandor = Module; 
+  </script>
+  <script src="lib/kelvandor/kelvandor.js"></script>
 </head>
 <body>           
 </body>
