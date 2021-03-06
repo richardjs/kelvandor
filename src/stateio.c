@@ -1,9 +1,9 @@
+#include "layout.h"
 #include "state.h"
 
 #include <stdio.h>
 
 
-const char DIRECTION_CHARS[] = {'n', 's', 'e', 'w'};
 const char RESOURCE_CHARS[4] = "rybg";
 
 
@@ -15,8 +15,9 @@ void Action_toString(const struct Action *action, char string[]) {
         case START_PLACE: {
             int node = action->data & 0b11111;
             int dir = action->data >> 6;
+            int edge = CORNER_ADJACENT_EDGES[node][dir];
 
-            sprintf(string, "s%02d%c", node, DIRECTION_CHARS[dir]);
+            sprintf(string, "s%02d%02d", node, edge);
             break;
         }
 
@@ -55,16 +56,16 @@ void Action_fromString(struct Action *action, const char string[]) {
     switch (string[0]) {
         case 's': {
             int node;
-            char dir;
-            sscanf(string, "s%02d%c", &node, &dir);
+            int edge;
+            sscanf(string, "s%02d%02d", &node, &edge);
 
             int data = node & 0b11111;
             if (data > NUM_CORNERS) {
                 data = 0;
             }
-            for (int i = 0; i < 4; i++) {
-                if (dir == DIRECTION_CHARS[i]) {
-                    data |= i << 6;
+            for (enum Direction dir = 0; dir < 4; dir++) {
+                if (CORNER_ADJACENT_EDGES[node][dir] == edge) {
+                    data |= dir << 6;
                     break;
                 }
             }
