@@ -1,0 +1,70 @@
+# Board layout #
+
+** = corners
+() = squares
+   = edges
+
+                 *0*  0  *1*
+
+                  1  (0)  2
+
+         *2*  3  *3*  4  *4*  5  *5*
+
+          6  (1)  7  (2)  8  (3)  9
+
+ *6* 10  *7* 11  *8* 12  *9* 13 *10* 14 *11*
+
+ 15  (4) 16  (5) 17  (6) 18  (7) 19  (8) 20
+
+*12* 21 *13* 22 *14* 23 *15* 24 *16* 25 *17*
+
+         26  (9) 27 (10) 28 (11) 29
+
+        *18* 30 *19* 31 *20* 32 *21*
+
+                 33 (12) 34
+
+                *22* 35 *23*
+
+
+# Move notation #
+
+All numbers are two digits, adding zero padding if necessary.
+
+## Start place ## 
+
+s + corner number + edge number
+
+Examples:
+s0001
+s1523
+
+## Trade ##
+
+Resources are represented by their lowercase first letter.
+
+t + in1 + in2 + in3 + out
+
+Examples:
+trggb
+tyyyr
+
+## Build branch ##
+
+b + edge number
+
+Examples:
+b30
+b04
+
+## Build node ##
+
+n + edge number
+
+Examples:
+n02
+n18
+
+## End turn ##
+
+e
