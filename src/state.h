@@ -41,6 +41,8 @@ enum ActionType {START_PLACE, TRADE, BRANCH, NODE, END};
 struct Square {
     enum Resource resource;
     uint_fast8_t limit;
+    // Note: 0 remaining indicates that adjacent nodes equals the
+    // limit, but the node isn't exhausted yet (that's at -1)
     int_fast8_t remaining;
     enum Player captor;
 };

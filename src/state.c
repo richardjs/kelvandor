@@ -162,7 +162,7 @@ void State_collectResources(struct State *state, int sign) {
             if (sq < 0) {
                 continue;
             }
-            if (state->squares[sq].remaining <= 0) {
+            if (state->squares[sq].remaining < 0) {
                 continue;
             }
             state->resources[state->turn][state->squares[sq].resource] += sign;
@@ -454,6 +454,7 @@ void State_randomStart(struct State *state) {
     state->largestNetworkPlayer = PLAYER_NONE;
     for (int i = 0; i < NUM_SQUARES; i++) {
         state->squares[i].captor = PLAYER_NONE;
+        state->squares[i].remaining = -1;
     }
 
     // Randomize the starting squares by interating through all squares
@@ -466,7 +467,7 @@ void State_randomStart(struct State *state) {
             int try_place;
             do {
                 try_place = rand() % NUM_SQUARES;
-            } while (state->squares[try_place].remaining > 0);
+            } while (state->squares[try_place].remaining >= 0);
 
             state->squares[try_place].resource = resource;
             state->squares[try_place].limit = limit;
