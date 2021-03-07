@@ -36,7 +36,7 @@ clean:
 	rm -f *.o
 	rm -f kelvandor
 	rm -f test
-	rm -f *.wasm
+	rm -f test.wasm
 
 
 # vim: set noexpandtab:
