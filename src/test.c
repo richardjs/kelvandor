@@ -443,7 +443,7 @@ int main() {
 
                     if (memcmp(&action, &state.actions[a], sizeof(struct Action)) != 0) {
                         printf("Action differs after serialization and deserialization: %s\n", actionString);
-                        return 1;
+                        return 2;
                     }
                 }
             }

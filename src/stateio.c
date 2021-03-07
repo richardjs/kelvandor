@@ -2,6 +2,7 @@
 #include "state.h"
 
 #include <stdio.h>
+#include <string.h>
 
 
 const char RESOURCE_CHARS[4] = "rybg";
@@ -53,6 +54,12 @@ void Action_toString(const struct Action *action, char string[]) {
 
 
 void Action_fromString(struct Action *action, const char string[]) {
+    // Zero the memory, since the struct's members don't take up all
+    // its space. This is not strictly necessary, but it's needed for
+    // memcmp to work reliably on emscripten. I don't expect this
+    // function to be called in performance-sensitive contexts, else
+    // we could attach it to some test flag.
+    memset(action, 0, sizeof(struct Action));
     switch (string[0]) {
         case 's': {
             int node;
