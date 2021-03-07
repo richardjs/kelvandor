@@ -62,14 +62,7 @@ int State_largestNetworkSize(const struct State *state, enum Player player) {
 // captured.
 // Returns whether a capture took place.
 bool State_updateCaptured(struct State *state, int square) {
-    // TODO why doesn't this work the same as the next block?
-    /*
     if (state->squares[square].captor != PLAYER_NONE) {
-        return false;
-    }
-    */
-    if (state->captured[0] & (1llu << square)
-            || state->captured[1] & (1llu << square)) {
         return false;
     }
 
@@ -356,6 +349,12 @@ void State_derive(struct State *state) {
     }
 
     // Captured squares
+    // TODO we might not need to reset things
+    state->captured[0] = 0;
+    state->captured[1] = 0;
+    for (int i = 0; i < NUM_SQUARES; i++ ) {
+        state->squares[i].captor = PLAYER_NONE;
+    }
     for (int i = 0; i < NUM_SQUARES; i++ ) {
         State_updateCaptured(state, i);
     }
@@ -477,7 +476,7 @@ void State_randomStart(struct State *state) {
             state->squares[try_place].resource = resource;
             state->squares[try_place].limit = limit;
             state->squares[try_place].remaining = limit;
-            state->squares[try_place].captor = PLAYER_NONE;
+            // captor is set above
         }
     }
 

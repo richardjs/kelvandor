@@ -72,13 +72,12 @@ int main() {
             state.captured[0] = 0x1;
             State_updateCaptured(&state, i);
             if (state.captured[0] != 0x1 || state.captured[1] > 0) {
-                printf("A square incorrectly marked captured: sq=%d captured[0]=0x%x\n", i, state.captured[0]);
+                printf("A square incorrectly marked captured: sq=%d captured[0]=0x%lx\n", i, state.captured[0]);
                 State_print(&state);
                 printf("---\n");
             }
         }
     }
-
 
     // Testing captures of mutiple squares
     {
@@ -86,17 +85,20 @@ int main() {
         state.branches[1] = 0b110001010000100110010000;
         for (int i = 0; i < NUM_SQUARES; i++) {
             state.captured[1] = 0;
+            for (int sq = 0; sq < NUM_SQUARES; sq++) {
+                state.squares[sq].captor = PLAYER_NONE;
+            }
             State_updateCaptured(&state, i);
             if (state.captured[0]) {
-                printf("state.captured[0] shouldn't have anything: %x\n", state.captured[0]);
+                printf("state.captured[0] shouldn't have anything: %lx\n", state.captured[0]);
             }
             if (i == 2 || i == 5 || i == 6) {
                 if (state.captured[1] != 0b1100100) {
-                    printf("2, 5, and 6 should be captured: %x\n", state.captured[1]);
+                    printf("2, 5, and 6 should be captured: %lx\n", state.captured[1]);
                 }
             } else {
                 if (state.captured[1] != 0) {
-                    printf("nothing should be captured: %x\n", state.captured[1]);
+                    printf("nothing should be captured: %lx\n", state.captured[1]);
                 }
             }
         }
@@ -231,6 +233,29 @@ int main() {
                 states[size] = state;
                 actions[size] = state.actions[rand() % state.actionCount];
                 State_act(&state, &actions[size++]);
+
+                // Check for correctness in captured fields
+                for (int sq = 0; sq < NUM_SQUARES; sq++) {
+                    if (state.squares[sq].captor == PLAYER_NONE) {
+                        continue;
+                    }
+                    if (!(state.captured[state.squares[sq].captor] & (1llu << sq))) {
+                        printf("square.captor is not present in state.captured\n");
+                        return 3;
+                    }
+                }
+                for (enum Player p = 0; p < NUM_PLAYERS; p++) {
+                    uint_fast16_t bits = state.captured[p];
+                    while (bits) {
+                        int bit = bitscan(bits);
+                        bits ^= (1llu << bit);
+
+                        if (state.squares[bit].captor != p) {
+                            printf("state.captured does not match square.captor\n");
+                            return 4;
+                        }
+                    }
+                }
 
                 // While we've got a bunch of random states, test the serialization code
                 char string[STATE_STRING_SIZE];
