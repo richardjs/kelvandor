@@ -162,7 +162,11 @@ void State_collectResources(struct State *state, int sign) {
             if (sq < 0) {
                 continue;
             }
-            if (state->squares[sq].remaining < 0) {
+            if (state->squares[sq].captor == PLAYER_NONE) {
+                if (state->squares[sq].remaining < 0) {
+                    continue;
+                }
+            } else if (state->squares[sq].captor != state->turn) {
                 continue;
             }
             state->resources[state->turn][state->squares[sq].resource] += sign;
