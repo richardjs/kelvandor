@@ -437,6 +437,7 @@ void State_act(struct State *state, const struct Action *action) {
         case END: {
             state->turn = !state->turn;
             State_collectResources(state, 1);
+            state->tradeDone = false;
 
             break;
         }
