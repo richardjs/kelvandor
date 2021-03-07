@@ -62,12 +62,16 @@ int State_largestNetworkSize(const struct State *state, enum Player player) {
 // captured.
 // Returns whether a capture took place.
 bool State_updateCaptured(struct State *state, int square) {
-    /* We can't do this right now, as this is used for undoing as well.
+    // TODO why doesn't this work the same as the next block?
+    /*
+    if (state->squares[square].captor != PLAYER_NONE) {
+        return false;
+    }
+    */
     if (state->captured[0] & (1llu << square)
             || state->captured[1] & (1llu << square)) {
         return false;
     }
-    */
 
     // Search mechanics
     int stack[NUM_SQUARES];
@@ -123,10 +127,6 @@ bool State_updateCaptured(struct State *state, int square) {
             // square, we must be on the edge of the board (without a
             // bounding branch), and thus this region is not captured
             } else {
-                // Have to put this back on so we can search it later
-                // TODO once we break this function into act and undo versions,
-                // this doesn't need to be in the act
-                stack[size++] = sq;
                 goto nocapture;
             }
         }
@@ -154,49 +154,6 @@ bool State_updateCaptured(struct State *state, int square) {
     return true;
 
     nocapture:
-    // Normally we could leave state alone if there are no captures.
-    // However, we want to support undo, and thus we'll need to mark
-    // the squares we visited as uncaptured (since they may have
-    // been captured by a move being undone).
-    // TODO It might be worth it to create a separate version of
-    // this function, or by some other means skip this processing
-    // when not undoing (especially since we'll never capture by
-    // undoing either).
-    // We'll also have to finish our above search, because it could
-    // terminate before putting a crumb on all connected nodes (some
-    // of which may have been marked captured by the undone action)
-    while (size) {
-        int sq = stack[--size];
-        crumbs[sq] = true;
-
-        for (enum Direction dir = NORTH; dir < 4; dir++) {
-            uint_fast64_t branch = (1llu << SQUARE_ADJACENT_BRANCHES[sq][dir]);
-            if (state->branches[PLAYER_1] & branch) {
-            } else if (state->branches[PLAYER_2] & branch) {
-            } else if (SQUARE_ADJACENT_SQUARES[sq][dir] >= 0) {
-                int adjacent = SQUARE_ADJACENT_SQUARES[sq][dir];
-                if (!crumbs[adjacent]) {
-                    stack[size++] = adjacent;
-                }
-            }
-        }
-    }
-
-    for (int i = 0; i < NUM_SQUARES; i++) {
-        if (!crumbs[i]) {
-            continue;
-        }
-        for (enum Player p = 0; p < NUM_PLAYERS; p++) {
-            state->captured[p] &= ~(1llu << i);
-            state->squares[i].captor = PLAYER_NONE;
-        }
-        for (enum Direction dir = 0; dir < 4; dir++) {
-            for (enum Player p = 0; p < NUM_PLAYERS; p++) {
-                state->blocked[p] &= ~(1llu << SQUARE_ADJACENT_BRANCHES[i][dir]);
-            }
-        }
-    }
-
     return false;
 }
 
@@ -496,93 +453,14 @@ void State_act(struct State *state, const struct Action *action) {
 }
 
 
-void State_undo(struct State *state, const struct Action *action) {
-    switch (action->type) {
-        case START_PLACE: {
-            if (state->turn == PLAYER_1) {
-                state->turn = PLAYER_2;
-            } else if (popcount(state->nodes[PLAYER_2]) != 1) {
-                state->turn = PLAYER_1;
-                for (enum Resource res = 0; res < NUM_RESOURCES; res++) {
-                    state->resources[PLAYER_2][res] = 0;
-                }
-            }
-
-            int node = action->data & 0b11111;
-            int dir = action->data >> 6;
-            int branch = CORNER_ADJACENT_EDGES[node][dir];
-            state->nodes[state->turn] ^= (1llu << node);
-            state->branches[state->turn] ^= (1llu << branch);
-
-            state->score[state->turn] -= 1;
-
-            for (int i = 0; i < 4 && CORNER_ADJACENT_SQUARES[node][i] >= 0; i++) {
-                state->squares[CORNER_ADJACENT_SQUARES[node][i]].remaining++;
-            }
-
-            State_updateLargestNetworkScore(state);
-
-            break;
-        }
-
-        case TRADE: {
-            state->resources[state->turn][(action->data >> 0)  & 0b11]++;
-            state->resources[state->turn][(action->data >> 2)  & 0b11]++;
-            state->resources[state->turn][(action->data >> 4)  & 0b11]++;
-            state->resources[state->turn][(action->data >> 6)  & 0b11]--;
-            state->tradeDone = false;
-
-            break;
-        }
-
-        case BRANCH: {
-            state->resources[state->turn][RED]++;
-            state->resources[state->turn][BLUE]++;
-            state->branches[state->turn] ^= (1llu << action->data);
-
-            state->score[state->turn] -= popcount(state->captured[state->turn]);
-            for (int i = 0; i < 2; i++) {
-                int square = EDGE_ADJACENT_SQUARES[action->data][i];
-                if (square < 0) continue;
-                State_updateCaptured(state, square);
-            }
-            state->score[state->turn] += popcount(state->captured[state->turn]);
-
-            State_updateLargestNetworkScore(state);
-
-            break;
-        }
-
-        case NODE: {
-            state->resources[state->turn][YELLOW] += 2;
-            state->resources[state->turn][GREEN] += 2;
-            state->nodes[state->turn] ^= (1llu << action->data);
-
-            for (int i = 0; i < 4 && CORNER_ADJACENT_SQUARES[action->data][i] >= 0; i++) {
-                state->squares[CORNER_ADJACENT_SQUARES[action->data][i]].remaining++;
-            }
-
-            state->score[state->turn] -= 1;
-
-            break;
-        }
-
-        case END: {
-            State_collectResources(state, -1);
-            state->turn = !state->turn;
-
-            break;
-        }
-    }
-
-    State_deriveActions(state);
-}
-
-
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));
+    // Except these fields
     state->largestNetworkPlayer = PLAYER_NONE;
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        state->squares[i].captor = PLAYER_NONE;
+    }
 
     // Randomize the starting squares by interating through all squares
     // and picking a random location for each. The vacant square will

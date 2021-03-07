@@ -119,32 +119,28 @@ int main() {
     }
 
 
-    // Test start actions and undo
+    // Test start actions
     {
         State_randomStart(&state);
         if (state.actionCount != 72) {
             printf("Incorrect number of starting actions: %d\n", state.actionCount);
         }
         struct Action action1 = state.actions[rand() % state.actionCount];
-        struct State state1 = state;
         State_act(&state, &action1);
         if (state.turn != PLAYER_2) {
             printf("Wrong player turn during start places");
         }
         struct Action action2 = state.actions[rand() % state.actionCount];
-        struct State state2 = state;
         State_act(&state, &action2);
         if (state.turn != PLAYER_2) {
             printf("Wrong player turn during start places");
         }
         struct Action action3 = state.actions[rand() % state.actionCount];
-        struct State state3 = state;
         State_act(&state, &action3);
         if (state.turn != PLAYER_1) {
             printf("Wrong player turn during start places");
         }
         struct Action action4 = state.actions[rand() % state.actionCount];
-        struct State state4 = state;
         State_act(&state, &action4);
         if (state.turn != PLAYER_2) {
             printf("Wrong player turn during start places");
@@ -154,43 +150,6 @@ int main() {
                 printf("START_PLACE move after start phase\n");
                 break;
             }
-        }
-
-        State_undo(&state, &action4);
-        if (memcmp(&state, &state4, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE 4 results in different state\n");
-           printf("Undone version:\n");
-           State_printDetail(&state);
-           printf("Reference version::\n");
-           State_printDetail(&state4);
-           printf("---\n");
-        }
-        State_undo(&state, &action3);
-        if (memcmp(&state, &state3, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE 3 results in different state\n");
-           printf("Undone version:\n");
-           State_printDetail(&state);
-           printf("Reference version::\n");
-           State_printDetail(&state3);
-           printf("---\n");
-        }
-        State_undo(&state, &action2);
-        if (memcmp(&state, &state2, sizeof(struct State)) != 0) {
-           printf("Undo START_PLACE 2 results in different state\n");
-           printf("Undone version:\n");
-           State_printDetail(&state);
-           printf("Reference version::\n");
-           State_printDetail(&state2);
-           printf("---\n");
-        }
-        State_undo(&state, &action1);
-        if (memcmp(&state, &state1, sizeof(struct State)) != 0) {
-            printf("Undo START_PLACE 1 results in different state\n");
-            printf("Undone version:\n");
-            State_printDetail(&state);
-            printf("Reference version::\n");
-            State_printDetail(&state1);
-            printf("---\n");
         }
     }
 
@@ -234,111 +193,6 @@ int main() {
     }
 
 
-    // Test BRANCH action undo
-    {
-        State_pastStart(&state);
-        state.resources[PLAYER_2][RED] = 1;
-        state.resources[PLAYER_2][BLUE] = 1;
-        State_deriveActions(&state);
-        for (int i = 0; i < state.actionCount; i++) {
-            if (state.actions[i].type == BRANCH) {
-                struct State test = state;
-                struct Action action = test.actions[i];
-                State_act(&test, &action);
-                State_undo(&test, &action);
-                if (memcmp(&state, &test, sizeof(struct State)) != 0) {
-                    printf("Branch undo results in different state\n");
-                    printf("Undone version:\n");
-                    State_printDetail(&test);
-                    printf("Reference version::\n");
-                    State_printDetail(&state);
-                    printf("---\n");
-                    break;
-                }
-            }
-        }
-    }
-
-
-    // Test TRADE action undo
-    {
-        State_pastStart(&state);
-        for (int i = 0; i < state.actionCount; i++) {
-            if (state.actions[i].type != TRADE) {
-                continue;
-            }
-            struct State test = state;
-            struct Action action = test.actions[i];
-            State_act(&test, &test.actions[i]);
-            State_undo(&test, &action);
-            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
-                printf("Trade undo results in different state\n");
-                printf("Undone version:\n");
-                State_printDetail(&test);
-                printf("Reference version::\n");
-                State_printDetail(&state);
-                printf("---\n");
-                break;
-            }
-        }
-    }
-
-
-    // Test NODE action undo
-    {
-        bool foundNodeAction = false;
-        while (!foundNodeAction) {
-            State_pastStart(&state);
-            for (int i = 0; i < state.actionCount; i++) {
-                if (state.actions[i].type == NODE) {
-                    foundNodeAction = true;
-                    break;
-                }
-            }
-        }
-
-        for (int i = 0; i < state.actionCount; i++) {
-            if (state.actions[i].type != NODE) continue;
-            struct State test = state;
-            struct Action action = test.actions[i];
-            State_act(&test, &test.actions[i]);
-            State_undo(&test, &action);
-            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
-                printf("Node undo results in different state\n");
-                printf("Undone version:\n");
-                State_printDetail(&test);
-                printf("Reference version::\n");
-                State_printDetail(&state);
-                printf("---\n");
-                break;
-            }
-        }
-    }
-
-
-    // Test END action undo
-    {
-        State_pastStart(&state);
-
-        for (int i = 0; i < state.actionCount; i++) {
-            if (state.actions[i].type != END) continue;
-            struct State test = state;
-            struct Action action = test.actions[i];
-            State_act(&test, &test.actions[i]);
-            State_undo(&test, &action);
-            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
-                printf("End undo results in different state\n");
-                printf("Undone version:\n");
-                State_printDetail(&test);
-                printf("Reference version::\n");
-                State_printDetail(&state);
-                printf("---\n");
-                break;
-            }
-        }
-    }
-
-
     // Test captured region build blocking and undoing after blocking
     {
         State_randomStart(&state);
@@ -359,36 +213,11 @@ int main() {
                 State_printDetail(&state);
             }
         }
-
-        // Setting up for making a capturing (and blocking) move so we can undo it
-        state.branches[PLAYER_1] = 0b1000110000110;
-        state.resources[PLAYER_1][RED] = 1;
-        state.resources[PLAYER_1][BLUE] = 1;
-        state.turn = PLAYER_1;
-        State_derive(&state);
-        for (int i = 0; i < state.actionCount; i++) {
-            if (state.actions[i].type != BRANCH || state.actions[i].data != 0) {
-                continue;
-            }
-            struct State test = state;
-            struct Action action = test.actions[i];
-            State_act(&test, &test.actions[i]);
-            State_undo(&test, &action);
-            if (memcmp(&state, &test, sizeof(struct State)) != 0) {
-                printf("Capture undo results in different state\n");
-                printf("Undone version:\n");
-                State_printDetail(&test);
-                printf("Reference version::\n");
-                State_printDetail(&state);
-                printf("---\n");
-                break;
-            }
-        }
     }
 
 
     {
-        // Test a whole bunch of actions, undos, and derives
+        // Test a whole bunch of actions and derives
         // Also test serialization and deserialization
         for (int i = 0; i < 100; i++) {
             const int TEST_DEPTH = 200;
@@ -408,6 +237,7 @@ int main() {
                 State_toString(&state, string);
                 struct State test = state;
                 State_fromString(&test, string);
+
                 if (memcmp(&state, &test, sizeof(struct State)) != 0) {
                     printf("Serializing and deserializing does not result in same state\n");
                     printf("Deserialized version:\n");
@@ -432,6 +262,10 @@ int main() {
                         printf("Actions differ\n");
                     }
 
+                    char actionString[ACTION_STRING_SIZE];
+                    Action_toString(&actions[size-1], actionString);
+                    printf("Last action:\t%s\n", actionString);
+
                     return 1;
                 }
 
@@ -450,18 +284,6 @@ int main() {
 
             while (size > 1) {
                 size--;
-                State_undo(&state, &actions[size]);
-                if (memcmp(&state, &states[size], sizeof(struct State)) != 0) {
-                    printf("Undo in random moves results in different state\n");
-                    printf("Undone version:\n");
-                    State_printDetail(&state);
-                    printf("Reference version::\n");
-                    State_printDetail(&states[size]);
-                    printf("Undone action %d\tdata %d\n", actions[size].type, actions[size].data);
-                    printf("---\n");
-                    i = 1000;
-                    break;
-                }
 
                 struct State derived = states[size];
                 State_derive(&derived);

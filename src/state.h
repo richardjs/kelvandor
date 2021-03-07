@@ -92,7 +92,6 @@ void State_randomStart(struct State *state);
 
 //struct Action *State_actions(const struct State *state);
 void State_act(struct State *state, const struct Action *action);
-void State_undo(struct State *state, const struct Action *action);
 
 
 /* Interface */
