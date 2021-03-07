@@ -1,7 +1,7 @@
 CFLAGS=-std=c99 -Wall -O3
 
 
-objects=state.o stateio.o layout.o
+objects=state.o stateio.o layout.o mcts.o random.o
 
 
 all: kelvandor
@@ -11,6 +11,10 @@ kelvandor: $(objects) main.o
 
 
 test: $(objects)
+
+
+httpapi: kelvandor
+	FLASK_APP=httpapi.py FLASK_ENV=development flask run
 
 
 wasm:
@@ -37,6 +41,7 @@ clean:
 	rm -f kelvandor
 	rm -f test
 	rm -f test.wasm
+	rm -fr __pycache__
 
 
 # vim: set noexpandtab:
