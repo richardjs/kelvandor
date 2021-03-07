@@ -349,12 +349,6 @@ void State_derive(struct State *state) {
     }
 
     // Captured squares
-    // TODO we might not need to reset things
-    state->captured[0] = 0;
-    state->captured[1] = 0;
-    for (int i = 0; i < NUM_SQUARES; i++ ) {
-        state->squares[i].captor = PLAYER_NONE;
-    }
     for (int i = 0; i < NUM_SQUARES; i++ ) {
         State_updateCaptured(state, i);
     }
