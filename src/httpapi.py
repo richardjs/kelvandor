@@ -12,6 +12,8 @@ app = Flask(__name__)
 
 @app.route('/<board>')
 def think(board):
+    assert board.isalnum()
+
     p = Popen((KELVANDOR, board), stdout=PIPE, stderr=PIPE)
 
     actions = []
