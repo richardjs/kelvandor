@@ -13,11 +13,19 @@
 		z-index: 5;
 	}
 
-	.node.empty:hover{
+	.node.empty {
+		opacity: 0.0;
+	}
+	.node.empty:hover{	
+		opacity: 1.0;	
 		fill:#c0c0c0;
 	}
-	
+
+	.road.empty {		
+		opacity: 0.0;
+	}	
 	.road.empty:hover {
+		opacity: 1.0;
 		fill:#bbbbbb;
 	}
 	
@@ -54,15 +62,19 @@
 		left: 820px;		
 		cursor: pointer;
 	}
+
+	#msg {
+		position: absolute;
+		text-align: center;
+		top: 750px;
+		left: 20px;
+		color: #c0c0c0;		
+		font-family: Arial, Helvetica, sans-serif;			
+		font-size: 12pt;
+	}
   </style>
   <script type="module" src="src/index.js"></script>    
-  <script>
-	 var Module = {
-		onRuntimeInitialized: function() {}
-	};
-	let kelvandor = Module; 
-  </script>
-  <script src="lib/kelvandor/kelvandor.js"></script>
+  
 </head>
 <body>           
 </body>

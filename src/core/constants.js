@@ -2,6 +2,9 @@ export const SIDE_1 = 0;
 export const SIDE_2 = 1;
 export const SIDE_NONE = 2;
 
+export const SIDES_TO_PROTOCOL = [1,2,0];
+export const PROTOCOL_TO_SIDES = [2,0,1];
+
 export const COUNT_TILES = 13;
 export const COUNT_NODES = 24;
 export const COUNT_ROADS = 36;
@@ -28,6 +31,7 @@ export const RES_VACANT = 4;
 export const PLAYER_HUMAN = 0;
 
 export const SCORE_WIN = 10;
+
 
 export const ORIENTATION_VERTICAL = 0;
 export const ORIENTATION_HORIZONTAL = 1;

@@ -22,11 +22,11 @@ export class TileUI extends Component {
 	
 	onMouseOver = (e) => {
 		
-		this.setState({fill:RES_COLORS_HOVER[this.props.color]});
+		//this.setState({fill:RES_COLORS_HOVER[this.props.color]});
 	}
 	
 	onMouseOut = (e) => {
-		this.setState({fill:RES_COLORS[this.props.color]});
+		//this.setState({fill:RES_COLORS[this.props.color]});
 	}
 	
 	renderDot(x, y) {
@@ -36,16 +36,16 @@ export class TileUI extends Component {
 		);
 	}
 	
-	renderExhausted(x, y) {
+	renderCenter(x, y, color) {
 		
 		return (
-			html`<circle cx=${x+TILE_HALF} cy=${y+TILE_HALF} r=${SIZE_EXHAUSTED} fill="#333333" />`
+			html`<circle cx=${x+TILE_HALF} cy=${y+TILE_HALF} r=${SIZE_EXHAUSTED} fill=${color} />`
 		);
 	}
 	
 	renderBackground = () => {	
-		var captured = this.props.captured;
-		var style = (captured == SIDE_NONE)? '' : 'stroke:' + SIDE_COLORS[captured] + '; stroke-width:' + SIZE_CAPTURED;		
+		//var captured = this.props.captured;
+		//var style = (captured == SIDE_NONE)? '' : 'stroke:' + SIDE_COLORS[captured] + '; stroke-width:' + SIZE_CAPTURED;		
 		
 		return (
 			html`
@@ -58,15 +58,14 @@ export class TileUI extends Component {
 					fill=${this.state.fill}
 					onclick=${this.props.click}
 					onmouseover=${this.onMouseOver}
-					onmouseout=${this.onMouseOut}
-					style=${style}
+					onmouseout=${this.onMouseOut}					
 				/>				
 			`
 		);
 	}
 	
 	render() {
-		//console.log(this.props.exhausted);
+		
 		var value = this.props.value;
 		var x = this.props.x;
 		var y = this.props.y;
@@ -85,7 +84,9 @@ export class TileUI extends Component {
 			dots.push(this.renderDot(x+TILE_THIRD, y+TILE_TWO_THIRDS)); 
 		}
 		var shapes = [this.renderBackground(), dots];
-		if (this.props.exhausted) shapes.push(this.renderExhausted(x,y));
+		if (this.props.captured != SIDE_NONE ) shapes.push(this.renderCenter(x,y, SIDE_COLORS[this.props.captured]));
+		else if (this.props.exhausted) shapes.push(this.renderCenter(x,y, '#333333'));
+		
 		return shapes;
 	}
 	

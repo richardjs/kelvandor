@@ -4,8 +4,7 @@ import {SIZE_TRADE_W, SIZE_TRADE_H, COUNT_TRADE, RES_COLORS, RES_COLORS_HOVER, R
 const SIZE_DOT = 10;
 const UNIT_DOT = SIZE_DOT*2;
 
-const BUTTON_LEFT = 0;
-const BUTTON_RIGHT = 2;
+
 
 export class TradeUI extends Component {			
 	
@@ -35,21 +34,12 @@ export class TradeUI extends Component {
 	}
 
 	onClick = (e) => {		
-		
-		if (e.button == BUTTON_LEFT) {
-			//dots = this.state.dots+1;
-			//if (dots > COUNT_TRADE) dots = 0;
-			this.props.onDotAdded(this.props.resid);
-		}
-		//else {
-		//	dots = this.state.dots-1;
-		//	if (dots < 0) dots = 0;
-		//}		
+							
+		this.props.onDotAdded(e.button, this.props.resid);		
 	}
 	
-	onTrade = (e) => {
-		//console.log('trade click');
-		this.props.onTrade(this.props.resid);
+	onTrade = (e) => {		
+		this.props.onTrade(this.props.resid);		
 	}
 	
 	renderDots = (y) => {

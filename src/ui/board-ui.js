@@ -12,11 +12,12 @@ import { ScoreUI } from './score-ui.js';
 import { TurnUI } from './turn-ui.js';
 
 const KEY_ENTER = 13;
-
+const DELAY_FLASH_MSG = 1000; //MS
 
 
 export class BoardUI extends Component {
-	
+	state = {msg:''}
+
 	constructor() {
 		super();
 		document.addEventListener('keydown', this.onKeyDown);
@@ -30,25 +31,19 @@ export class BoardUI extends Component {
 	
 	//Events		
 	onNodeClick = (nid) => {
-		if (this.board.addNode(nid)) {
-			//this.gameEvents[EVENT_NODE_ADDED](nid, this.board.turn);
-			//window.location.hash = this.board.toString();
-			this.forceUpdate();	
+		var action = this.board.addNode(nid);		
+		if (action.status) {			
+			window.location.hash = this.board.toString();			
 		}
-		else {
-			alert('Unable to add node');
-			//this.gameEvents[EVENT_MESSAGE]('Invalid Node');
-		}		
+		this.flashMsg(action.msg);	
 	}
 	
 	onRoadClick = (rid) => {
-		if (this.board.addRoad(rid)) {			
-			this.forceUpdate();	
+		var action = this.board.addRoad(rid);
+		if (action.status) {			
+			window.location.hash = this.board.toString();			
 		}
-		else {
-			alert('unable to add road');
-			//this.gameEvents[EVENT_MESSAGE]('Invalid Node');
-		}		
+		this.flashMsg(action.msg);	
 	}
 	
 	onKeyDown = (e) => {
@@ -59,7 +54,7 @@ export class BoardUI extends Component {
 	}
 	
 	onRightClick = (e) => {
-		//e.preventDefault();
+		e.preventDefault();
 	}
 
 	
@@ -74,27 +69,28 @@ export class BoardUI extends Component {
 	}
 	
 	onChangeTurn = (e) => {
-		this.board.changeTurn();
-		var boardStr = this.board.toString().toLowerCase();
-		console.log('nar', boardStr);
-		
-		let state = new kelvandor.State();
-		state.fromString(boardStr);
-		console.log('kel', state.toString());			
-		
-		 
-		state.delete();
-		this.forceUpdate();		
+		var action = this.board.changeTurn();
+		if (action.status) {
+			var boardStr = this.board.toString();				
+			window.location.hash = boardStr;
+			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27}));
+		}
+		this.flashMsg(action.msg);
 	}
 	
 	
 
 	onTrade = (tradeResids) => {
-		
-		if (this.board.trade(tradeResids)) {
+		var action = this.board.trade(tradeResids);
+		this.flashMsg(action.msg);
+	}
 
-		}
-		//else alert('invalid trade');
+	flashMsg = (msg) => {
+		this.setState({msg:msg});
+		var self = this;
+		setTimeout(function() {
+			if (self.state.msg == msg) self.setState({msg:''});
+		}, DELAY_FLASH_MSG);
 	}
 	
 	//Rendering methods
@@ -113,6 +109,19 @@ export class BoardUI extends Component {
 		}
 		return tileUIs;
 	}
+
+	renderNodes = () => {
+		var nodeUIs = [];
+		for (var nid = 0; nid < this.board.nodes.length; nid++) {					
+			var node = this.board.nodes[nid];
+			var x = constants.NID_TO_C[nid] * UNIT_NODE;
+			var y = constants.NID_TO_R[nid] * UNIT_NODE;
+			var color = SIDE_COLORS[node.side];		
+			var side = node.side;
+			nodeUIs.push(html`<${NodeUI} nid=${nid} side=${side} x=${x} y=${y} color=${color} click=${this.onNodeClick}/>`);
+		}
+		return nodeUIs;
+	}
 	
 	renderRoads = () => {
 		var roadUIs = [];
@@ -128,27 +137,24 @@ export class BoardUI extends Component {
 		return roadUIs;
 	}
 	
-	renderNodes = () => {
-		var nodeUIs = [];
-		for (var nid = 0; nid < this.board.nodes.length; nid++) {					
-			var node = this.board.nodes[nid];
-			var x = constants.NID_TO_C[nid] * UNIT_NODE;
-			var y = constants.NID_TO_R[nid] * UNIT_NODE;
-			var color = SIDE_COLORS[node.side];		
-			var side = node.side;
-			nodeUIs.push(html`<${NodeUI} nid=${nid} side=${side} x=${x} y=${y} color=${color} click=${this.onNodeClick}/>`);
-		}
-		return nodeUIs;
-	}
 	
 	
-	renderRes = (side) => {		
+	renderRes = (x, y, side) => {		
 		var res = this.board.res[side];
 		if (this.board.phase != constants.PHASE_PLAY) return;
-		return html`<${ResUI} side=${side} res=${res} x="65" y="620" onTrade=${this.onTrade}/>`;
+		return html`<${ResUI} side=${side} res=${res} x=${x} y=${y} onTrade=${this.onTrade}/>`;
 	}
 	
 	
+
+	renderDone = () => {
+		if (this.board.phase != constants.PHASE_PLAY) return;
+		return (
+			html `
+				<button id="btnDone" onclick=${this.onChangeTurn}>Done</button>
+				`
+		);
+	}
 
 	render () {						
 		var turn = this.board.turn == constants.SIDE_1? 'Player 1' : 'Player 2';
@@ -156,20 +162,20 @@ export class BoardUI extends Component {
 			html`
 				<div style="float:right">
 				<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button><br/>
-				
 				</div>
-				<button id="btnDone" onclick=${this.onChangeTurn}>Done</button>
+				${this.renderDone()}
 				
 				<svg width="800" height="800" style="border:1px solid black;">
 					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[0]}/>
 					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[1]}/>
-					<${TurnUI} x="10" y="575" label="Turn:" value=${turn}/>
+					<${TurnUI} x="10" y="575" label="Turn:" value=${turn} phase=${this.board.phase}/>
 					
 					${this.renderTiles()}
 					${this.renderRoads()}
 					${this.renderNodes()}
-					${this.renderRes(this.board.turn)}								
+					${this.renderRes(70, 620, this.board.turn)}																
 				</svg>				
+				<div id="msg">${this.state.msg}</div>
 			`
 		);
 	}

@@ -36,11 +36,11 @@ export class Tile {
 		var colChar = colVal[0];
 		var col;
 		switch (colChar) {
-			case 'V': col = RES_VACANT; break;
-			case 'B': col = RES_BLUE; break;
-			case 'R': col = RES_RED; break;
-			case 'G': col = RES_GREEN; break;
-			case 'Y': col = RES_YELLOW; break;		
+			case 'V': col = 0; break;//RES_VACANT; break;
+			case 'B': col = 1; break;//RES_BLUE; break;
+			case 'G': col = 2; break;//RES_GREEN; break;
+			case 'R': col = 3; break;//RES_RED; break;
+			case 'Y': col = 4; break;//RES_YELLOW; break;		
 			default: throw new Error('Invalid tile char: ' + colChar);
 		}
 		var val = Number.parseInt(colVal[1]);

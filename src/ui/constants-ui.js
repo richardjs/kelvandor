@@ -3,10 +3,10 @@ import {RES_VACANT, RES_BLUE, RES_GREEN, RES_RED, RES_YELLOW, SIDE_NONE, SIDE_1,
 export const SIZE_TILE = 100;
 export const SIZE_TILE_DOT = 10;
 export const SIZE_NODE = 15;
-export const SIZE_ROAD_W = 53;
-export const SIZE_ROAD_H = 20;
-export const SIZE_ROAD_EMPTY_W = 53;
-export const SIZE_ROAD_EMPTY_H = 10;
+export const SIZE_ROAD_EMPTY_W = 55;
+export const SIZE_ROAD_EMPTY_H = 15;
+export const SIZE_ROAD_W = 55;
+export const SIZE_ROAD_H = 10;
 export const SIZE_TRADE_W = 100;
 export const SIZE_TRADE_H = 50;
 

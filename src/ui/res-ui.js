@@ -1,8 +1,11 @@
 import { html, Component } from '../../lib/preact.js';
 import {TradeUI} from './trade-ui.js';
-import {COUNT_RES} from '../core/constants.js';
+import {COUNT_RES, RES_BLUE, RES_GREEN, RES_RED, RES_VACANT, RES_YELLOW} from '../core/constants.js';
 import {UNIT_TRADE} from './constants-ui.js';
 
+const BUTTON_LEFT = 0;
+const BUTTON_RIGHT = 2;
+const KEY_ESCAPE = 27;
 
 export class ResUI extends Component {
 	
@@ -12,7 +15,7 @@ export class ResUI extends Component {
 		document.addEventListener('keydown', this.onKeyDown);
 	}
 
-	componentDidMount = () => {				
+	componentDidMount = () => {						
 	}
 	
 	onTrade = (targetResid) => {		
@@ -32,23 +35,27 @@ export class ResUI extends Component {
 
 	}
 
-	onDotAdded = (resid) => {
+	onDotAdded = (btn, resid) => {
 		var res = this.props.res;
 		
-		if (res[resid]) {
-			var dots = this.state.dots;
-			if (res[resid]-dots[resid] > 0) {
-				if (this.totalDotCount() < 3) {					
-					dots[resid]++;		
-					this.setState({dots:dots});
+		if (btn == BUTTON_LEFT) {
+			if (res[resid]) {
+				var dots = this.state.dots;
+				if (res[resid]-dots[resid] > 0) {
+					if (this.totalDotCount() < 3) {					
+						dots[resid]++;		
+						this.setState({dots:dots});
+					}
 				}
 			}
 		}
+		else if (btn == BUTTON_RIGHT) { //Cancel 
+			var dots = this.state.dots;
+			dots[resid] = 0;
+			this.setState({dots:dots});
+		}
 	}
 
-	onDotRemoved = (resid) => {
-
-	}
 
 	totalDotCount = () => {
 		var dots = this.state.dots;
@@ -61,15 +68,20 @@ export class ResUI extends Component {
 	
 	onKeyDown = (e) => {	
 		var keyChar = e.key.toUpperCase();
-		var resid;
-		//if (keyChar == 'B') resid = constants.RES_BLUE;
-		//else if (keyChar == 'G') resid = constants.RES_GREEN;
-		//else if (keyChar == 'R') resid = constants.RES_RED;
-		//else if (keyChar == 'Y') resid = constants.RES_YELLOW;
 		
-		//if (resid) this.setState({lastRes:vid});
-		//console.log('here');
-			
+		if (e.keyCode == KEY_ESCAPE) this.setState({dots:[0,0,0,0]});
+		else {		
+			var resid = RES_VACANT;
+			if (keyChar == 'B') resid = RES_BLUE;			
+			else if (keyChar == 'G') resid = RES_GREEN;
+			else if (keyChar == 'R') resid = RES_RED; 
+			else if (keyChar == 'Y') resid = RES_YELLOW;
+
+			if (resid != RES_VACANT) {
+				if (this.totalDotCount() == 3) this.onTrade(resid);
+				else this.onDotAdded(BUTTON_LEFT, resid);
+			}
+		}
 
 	}
 	
