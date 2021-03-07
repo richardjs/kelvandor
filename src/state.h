@@ -98,6 +98,8 @@ void State_act(struct State *state, const struct Action *action);
 
 void Action_toString(const struct Action *action, char string[]);
 void Action_fromString(struct Action *action, const char string[]);
+
+bool validStateString(const char string[]);
 void State_toString(const struct State *state, char string[]);
 void State_fromString(struct State *state, const char string[]);
 

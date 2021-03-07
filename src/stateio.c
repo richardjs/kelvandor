@@ -141,6 +141,77 @@ void Action_fromString(struct Action *action, const char string[]) {
 }
 
 
+bool validStateString(const char string[]) {
+    int s = 0;
+    for (int i = 0; i < NUM_SQUARES; i++) {
+        switch(string[s++]) {
+            case 'r':
+            case 'y':
+            case 'b':
+            case 'g':
+            case 'v':
+                break;
+            default:
+                fprintf(stderr, "invalid square resource at %d\n", s - 1);
+                return false;
+        }
+        switch(string[s++]) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+                break;
+            default:
+                fprintf(stderr, "invalid square limit at %d\n", s - 1);
+                return false;
+        }
+    }
+
+    for (int i = 0; i < NUM_CORNERS + NUM_EDGES; i++) {
+        switch(string[s++]) {
+            case '0':
+            case '1':
+            case '2':
+                break;
+            default:
+                fprintf(stderr, "invalid node/corner at %d\n", s - 1);
+                return false;
+        }
+    }
+
+    // Turn
+    switch(string[s++]) {
+        case '1':
+        case '2':
+            break;
+        default:
+            fprintf(stderr, "invalid turn at %d\n", s - 1);
+            return false;
+    }
+
+    // Resources
+    for (int i = 0; i < NUM_PLAYERS * NUM_RESOURCES * 2; i++) {
+        char c = string[s++];
+        if (c < '0' || (c > '9' && (c < 'a' || c > 'f'))) {
+            fprintf(stderr, "invalid resource amount at %d\n", s - 1);
+            return false;
+        }
+    }
+
+    // Trade status
+    switch(string[s++]) {
+        case '0':
+        case '1':
+            break;
+        default:
+            fprintf(stderr, "invalid trade status at %d\n", s - 1);
+            return false;
+    }
+
+    return true;
+}
+
+
 void State_toString(const struct State *state, char string[]) {
     int s = 0;
     char c;
@@ -213,6 +284,7 @@ void State_toString(const struct State *state, char string[]) {
     string[s++] = '\0';
 }
 
+
 void State_fromString(struct State *state, const char string[]) {
     State_randomStart(state);
 
@@ -223,6 +295,7 @@ void State_fromString(struct State *state, const char string[]) {
         enum Resource resource;
         switch(string[s++]) {
             case 'r':
+            case 'v':
                 resource = RED;
                 break;
             case 'y':
