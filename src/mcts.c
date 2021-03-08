@@ -38,6 +38,7 @@ void Node_init(struct Node *node, const struct Node *parent,
 
 void Node_expand(struct Node *node) {
     for (int i = 0; i < node->state.actionCount; i++) {
+        // TODO check malloc result
         node->children[i] = malloc(sizeof(struct Node));
         Node_init(node->children[i], node, &node->state);
         State_act(&node->children[i]->state, &node->state.actions[i]);
@@ -140,12 +141,47 @@ float iterate(struct Node *root, unsigned int depth) {
 }
 
 
+unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
+    int rootID = id++;
+    int childIDs[MAX_ACTIONS];
+
+    char stateString[STATE_STRING_SIZE];
+    State_toString(&root->state, stateString);
+
+    if (!root->expanded) {
+        fprintf(fp, "Node %d\n", rootID);
+        fprintf(fp, "String %s\n", stateString);
+        fprintf(fp, "Not expanded\n");
+        fprintf(fp, "\n");
+        return id;
+    }
+
+    for (int i = 0; i < root->state.actionCount; i++) {
+        childIDs[i] = id;
+        id = dumpTree(fp, root->children[i], id);
+    }
+
+    fprintf(fp, "Node %d\n", rootID);
+    fprintf(fp, "Value %f\n", root->value);
+    fprintf(fp, "Visits %f\n", root->visits);
+    for (int i = 0; i < root->state.actionCount; i++) {
+        fprintf(fp, "Child %d\n", childIDs[i]);
+    }
+    fprintf(fp, "\n");
+
+    return id;
+}
+
+
 int mcts(const struct State *state) {
     memset(&stats, 0, sizeof(struct Stats));
 
+    // TODO check malloc result
     struct Node *root = malloc(sizeof(struct Node));
     Node_init(root, NULL, state);
 
+    // TODO Repeat iteratons on best children until it is not our turn
+    // anymore, to reuse to data in the tree
     for (int i = 0; i < ITERATIONS; i++) {
         iterate(root, 0);
     }
@@ -181,6 +217,14 @@ int mcts(const struct State *state) {
         Action_toString(&root->state.actions[i], actionString);
         fprintf(stderr, "%s\t%f\n", actionString,
             root->children[i]->value / root->children[i]->visits);
+    }
+
+    FILE* fp = fopen("tree.txt", "w");
+    if (!fp) {
+        fprintf(stderr, "WARNING: Couldn't dump tree to tree.txt\n");
+    } else {
+        dumpTree(fp, root, 0);
+        fclose(fp);
     }
 
     Node_free(root);
