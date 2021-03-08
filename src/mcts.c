@@ -38,8 +38,11 @@ void Node_init(struct Node *node, const struct Node *parent,
 
 void Node_expand(struct Node *node) {
     for (int i = 0; i < node->state.actionCount; i++) {
-        // TODO check malloc result
         node->children[i] = malloc(sizeof(struct Node));
+        if (node->children[i] == NULL) {
+            fprintf(stderr, "malloc failed in Node_expand\n");
+            exit(3);
+        }
         Node_init(node->children[i], node, &node->state);
         State_act(&node->children[i]->state, &node->state.actions[i]);
     }
@@ -175,8 +178,11 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
 int mcts(const struct State *state) {
     memset(&stats, 0, sizeof(struct Stats));
 
-    // TODO check malloc result
     struct Node *root = malloc(sizeof(struct Node));
+    if (root == NULL) {
+        fprintf(stderr, "root malloc failed in mcts\n");
+        exit(4);
+    }
     Node_init(root, NULL, state);
 
     // TODO Repeat iteratons on best children until it is not our turn
