@@ -183,7 +183,12 @@ int mcts(const struct State *state) {
     // anymore, to reuse to data in the tree
     for (int i = 0; i < ITERATIONS; i++) {
         iterate(root, 0);
+
+        if (i % (ITERATIONS/10) == 0) {
+            fprintf(stderr, ".");
+        }
     }
+    fprintf(stderr, "\n");
 
     struct Action bestAction;
     float bestScore = -INFINITY;
