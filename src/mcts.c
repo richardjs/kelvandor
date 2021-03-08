@@ -8,10 +8,11 @@
 
 
 struct Stats {
-    int nodes;
-    int maxTreeDepth;
-    int simulations;
-    int depthOuts;
+    unsigned int nodes;
+    unsigned long long treeBytes;
+    unsigned int maxTreeDepth;
+    unsigned int simulations;
+    unsigned int depthOuts;
 };
 struct Stats stats;
 
@@ -35,6 +36,11 @@ void Node_init(struct Node *node, const struct State *state) {
     stats.nodes++;
 
     node->children = malloc(sizeof(struct Node*) * node->state.actionCount);
+    if (node->children == NULL) {
+        fprintf(stderr, "malloc failed in Node_init\n");
+        exit(6);
+    }
+    stats.treeBytes += sizeof(struct Node*) * node->state.actionCount;
 }
 
 
@@ -45,7 +51,9 @@ void Node_expand(struct Node *node) {
             fprintf(stderr, "malloc failed in Node_expand\n");
             exit(3);
         }
+        stats.treeBytes += sizeof(struct Node);
         Node_init(node->children[i], &node->state);
+
         State_act(&node->children[i]->state, &node->state.actions[i]);
     }
     node->expanded = true;
@@ -103,9 +111,9 @@ float iterate(struct Node *root, unsigned int depth) {
         // TODO we use this branch a couple times; probably should be a
         // function
         float score;
-        if (root->state.score[root->state.turn] >= 10) {
+        if (root->state.score[root->state.turn] >= WIN_SCORE) {
             score = INFINITY;
-        } else if (root->state.score[!root->state.turn] >= 10) {
+        } else if (root->state.score[!root->state.turn] >= WIN_SCORE) {
             score = -INFINITY;
         } else {
             score = 0.0;
@@ -188,6 +196,7 @@ int mcts(const struct State *state) {
         fprintf(stderr, "root malloc failed in mcts\n");
         exit(4);
     }
+    stats.treeBytes += sizeof(struct Node);
     Node_init(root, state);
 
     struct timeval start;
@@ -233,7 +242,7 @@ int mcts(const struct State *state) {
     fprintf(stderr, "iter/s:\t\t%f\n", (float)ITERATIONS/duration*1000);
     fprintf(stderr, "actions:\t%d\n", root->state.actionCount);
     fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
-    fprintf(stderr, "tree size:\t%ld MiB\n", stats.nodes * sizeof(struct Node) / 1024 / 1024);
+    fprintf(stderr, "tree size:\t%lld MiB\n", stats.treeBytes / 1024 / 1024);
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
     fprintf(stderr, "simulations:\t%d\n", stats.simulations);
     fprintf(stderr, "depth outs:\t%d\n", stats.depthOuts);
