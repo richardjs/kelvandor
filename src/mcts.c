@@ -7,6 +7,7 @@
 
 
 struct Stats {
+    int nodes;
     int maxTreeDepth;
     int simulations;
     int depthOuts;
@@ -33,6 +34,7 @@ void Node_init(struct Node *node, const struct Node *parent,
     node->expanded = false;
     node->visits = 0;
     node->value = 0;
+    stats.nodes++;
 }
 
 
@@ -218,24 +220,33 @@ int mcts(const struct State *state) {
     fprintf(stderr, "visits:\t\t%d\n", bestChild->visits);
     fprintf(stderr, "iterations:\t%d\n", ITERATIONS);
     fprintf(stderr, "actions:\t%d\n", root->state.actionCount);
+    fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
+    fprintf(stderr, "tree size:\t%d MB\n", stats.nodes * sizeof(struct Node) / 1024 / 1024);
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
     fprintf(stderr, "simulations:\t%d\n", stats.simulations);
     fprintf(stderr, "depth outs:\t%d\n", stats.depthOuts);
 
+    #ifdef KELV_LOGACTIONS
     fprintf(stderr, "action value dump:\n");
     for (int i = 0; i < root->state.actionCount; i++) {
         Action_toString(&root->state.actions[i], actionString);
         fprintf(stderr, "%s\t%f\n", actionString,
             root->children[i]->value / root->children[i]->visits);
     }
+    #endif
 
     FILE* fp = fopen("tree.txt", "w");
     if (!fp) {
         fprintf(stderr, "WARNING: Couldn't dump tree to tree.txt\n");
     } else {
+        fprintf(stderr, "Dumping tree to tree.txt...\n");
         dumpTree(fp, root, 0);
         fclose(fp);
+        fprintf(stderr, "Done\n");
     }
+
+    printf("node size: %d\n", sizeof(struct Node));
+    printf("state size: %d\n", sizeof(struct State));
 
     Node_free(root);
     return 0;
