@@ -149,9 +149,8 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
     State_toString(&root->state, stateString);
 
     if (!root->expanded) {
-        fprintf(fp, "Node %d\n", rootID);
-        fprintf(fp, "String %s\n", stateString);
-        fprintf(fp, "Not expanded\n");
+        fprintf(fp, "node %d\n", rootID);
+        fprintf(fp, "string %s\n", stateString);
         fprintf(fp, "\n");
         return id;
     }
@@ -161,11 +160,11 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
         id = dumpTree(fp, root->children[i], id);
     }
 
-    fprintf(fp, "Node %d\n", rootID);
-    fprintf(fp, "Value %f\n", root->value);
-    fprintf(fp, "Visits %f\n", root->visits);
+    fprintf(fp, "node %d\n", rootID);
+    fprintf(fp, "value %f\n", root->value);
+    fprintf(fp, "visits %d\n", root->visits);
     for (int i = 0; i < root->state.actionCount; i++) {
-        fprintf(fp, "Child %d\n", childIDs[i]);
+        fprintf(fp, "child %d\n", childIDs[i]);
     }
     fprintf(fp, "\n");
 

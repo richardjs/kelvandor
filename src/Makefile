@@ -17,6 +17,10 @@ httpapi: kelvandor
 	FLASK_APP=httpapi.py FLASK_ENV=development flask run
 
 
+treeinspect:
+	ipython -i tree_inspect.py || python -i tree_inspect.py
+
+
 wasm:
 	emcc -Wall -c state.c -o state.o
 	emcc -Wall -c stateio.c -o stateio.o
