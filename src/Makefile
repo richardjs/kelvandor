@@ -46,6 +46,7 @@ clean:
 	rm -f test
 	rm -f test.wasm
 	rm -fr __pycache__
+	rm -f tree.txt
 
 
 # vim: set noexpandtab:
