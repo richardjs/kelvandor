@@ -266,16 +266,16 @@ void State_toString(const struct State *state, char string[]) {
 
     // Resources
     for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-        int blue = state->resources[player][BLUE];
-        if (blue > 0xff) blue = 0xff;
         int green = state->resources[player][GREEN];
         if (green > 0xff) green = 0xff;
-        int red = state->resources[player][RED];
-        if (red > 0xff) red = 0xff;
         int yellow = state->resources[player][YELLOW];
         if (yellow > 0xff) yellow = 0xff;
+        int blue = state->resources[player][BLUE];
+        if (blue > 0xff) blue = 0xff;
+        int red = state->resources[player][RED];
+        if (red > 0xff) red = 0xff;
 
-        s += sprintf(&string[s], "%02x%02x%02x%02x", blue, green, red, yellow);
+        s += sprintf(&string[s], "%02x%02x%02x%02x", green, yellow, blue, red);
     }
 
     // Trade status
@@ -360,13 +360,13 @@ void State_fromString(struct State *state, const char string[]) {
     for (enum Player player = 0; player < NUM_PLAYERS; player++) {
         unsigned int blue, green, red, yellow;
         sscanf(&string[s], "%02x%02x%02x%02x",
-            &blue, &green, &red, &yellow
+            &green, &yellow, &blue, &red
         );
         s += 2*4;
-        state->resources[player][BLUE] = blue;
         state->resources[player][GREEN] = green;
-        state->resources[player][RED] = red;
         state->resources[player][YELLOW] = yellow;
+        state->resources[player][BLUE] = blue;
+        state->resources[player][RED] = red;
     }
 
     // Trade status

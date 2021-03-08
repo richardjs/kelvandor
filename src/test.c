@@ -270,7 +270,7 @@ int main() {
                     printf("Reference version:\n");
                     State_printDetail(&state);
                     printf("String:\t%s\n", string);
-                    printf("Guide:\trlrlrlrlrlrlrlrlrlrlrlrlrlnnnnnnnnnnnnnnnnnnnnnnnneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeetbbggrryybbggrryyt\n");
+                    printf("Guide:\trlrlrlrlrlrlrlrlrlrlrlrlrlnnnnnnnnnnnnnnnnnnnnnnnneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeetggyybbrrggyybbrrt\n");
 
                     if (memcmp(&state.squares, &test.squares, NUM_SQUARES*sizeof(struct Square)) != 0) {
                         printf("Squares differ\n");
