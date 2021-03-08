@@ -17,25 +17,24 @@ struct Stats stats;
 
 
 struct Node {
-    const struct Node *parent;
     struct State state;
 
     bool expanded;
-    struct Node *children[MAX_ACTIONS];
+    struct Node **children;
 
     unsigned int visits;
     float value;
 };
 
 
-void Node_init(struct Node *node, const struct Node *parent,
-        const struct State *state) {
-    node->parent = parent;
+void Node_init(struct Node *node, const struct State *state) {
     node->state  = *state;
     node->expanded = false;
     node->visits = 0;
     node->value = 0;
     stats.nodes++;
+
+    node->children = malloc(sizeof(struct Node*) * node->state.actionCount);
 }
 
 
@@ -46,7 +45,7 @@ void Node_expand(struct Node *node) {
             fprintf(stderr, "malloc failed in Node_expand\n");
             exit(3);
         }
-        Node_init(node->children[i], node, &node->state);
+        Node_init(node->children[i], &node->state);
         State_act(&node->children[i]->state, &node->state.actions[i]);
     }
     node->expanded = true;
@@ -59,6 +58,7 @@ void Node_free(struct Node *node) {
             Node_free(node->children[i]);
         }
     }
+    free(node->children);
     free(node);
 }
 
@@ -188,7 +188,7 @@ int mcts(const struct State *state) {
         fprintf(stderr, "root malloc failed in mcts\n");
         exit(4);
     }
-    Node_init(root, NULL, state);
+    Node_init(root, state);
 
     struct timeval start;
     gettimeofday(&start, NULL);

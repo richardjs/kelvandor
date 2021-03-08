@@ -27,6 +27,12 @@
                 *22* 35 *23*
 
 
+# Board notation
+
+rlrlrlrlrlrlrlrlrlrlrlrlrlnnnnnnnnnnnnnnnnnnnnnnnneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeetbbggrryybbggrryyt
+r2g1b2r3g2y2v0g3y1b3r1b1y3000000000202000000000110000000000000000000202000000001000001200010100020002001
+
+
 # Move notation #
 
 All numbers are two digits, adding zero padding if necessary.

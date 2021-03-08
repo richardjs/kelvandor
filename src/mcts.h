@@ -5,8 +5,8 @@
 #include "state.h"
 
 
-#define ITERATIONS 10000
-#define MAX_SIM_DEPTH 1000
+#define ITERATIONS 5000
+#define MAX_SIM_DEPTH 500
 
 
 int mcts(const struct State *state);
