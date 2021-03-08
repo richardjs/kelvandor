@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 
 struct Stats {
@@ -187,6 +188,9 @@ int mcts(const struct State *state) {
     }
     Node_init(root, NULL, state);
 
+    struct timeval start;
+    gettimeofday(&start, NULL);
+
     // TODO Repeat iteratons on best children until it is not our turn
     // anymore, to reuse to data in the tree
     for (int i = 0; i < ITERATIONS; i++) {
@@ -197,6 +201,10 @@ int mcts(const struct State *state) {
         }
     }
     fprintf(stderr, "\n");
+
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
 
     struct Action bestAction;
     float bestScore = -INFINITY;
@@ -219,9 +227,11 @@ int mcts(const struct State *state) {
     fprintf(stderr, "value:\t\t%f\n", bestScore);
     fprintf(stderr, "visits:\t\t%d\n", bestChild->visits);
     fprintf(stderr, "iterations:\t%d\n", ITERATIONS);
+    fprintf(stderr, "time:\t\t%d ms\n", duration);
+    fprintf(stderr, "iter/s:\t\t%f\n", (float)ITERATIONS/duration*1000);
     fprintf(stderr, "actions:\t%d\n", root->state.actionCount);
     fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
-    fprintf(stderr, "tree size:\t%d MiB\n", stats.nodes * sizeof(struct Node) / 1024 / 1024);
+    fprintf(stderr, "tree size:\t%ld MiB\n", stats.nodes * sizeof(struct Node) / 1024 / 1024);
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
     fprintf(stderr, "simulations:\t%d\n", stats.simulations);
     fprintf(stderr, "depth outs:\t%d\n", stats.depthOuts);
@@ -244,9 +254,6 @@ int mcts(const struct State *state) {
         fclose(fp);
         fprintf(stderr, "Done\n");
     }
-
-    printf("node size: %d\n", sizeof(struct Node));
-    printf("state size: %d\n", sizeof(struct State));
 
     Node_free(root);
     return 0;
