@@ -23,6 +23,7 @@ var R = ITEM_ROAD;
 
 
 
+
 var V = constants.ORIENTATION_VERTICAL; //Vertical 
 const H = constants.ORIENTATION_HORIZONTAL; //Horizontal
 const ORIENTATIONS = [H,V,V,H,H,H,V,V,V,V,H,H,H,H,H,V,V,V,V,V,V,H,H,H,H,H,V,V,V,V,H,H,H,V,V,H];
@@ -178,8 +179,8 @@ export class Board {
 		}
 		
 		//Phase
-		board.phase = boardStr[s];
-		s++;
+		//board.phase = boardStr[s];
+		//s++;
 		
 		//Turn 
 		board.turn = boardStr[s];
@@ -197,6 +198,9 @@ export class Board {
 			s += 2;
 		}
 		
+		//Traded Status
+		var tradedStatus = boardStr[s+1];
+		board.hasAlreadyTraded = tradedStatus? true : false;
 		
 		//Calculate score, other attributes?
 		return board;
@@ -228,17 +232,21 @@ export class Board {
 			resStr1 += this.res[constants.SIDE_1][i].toString(BASE_RES).padStart(2, '0');			
 			resStr2 += this.res[constants.SIDE_2][i].toString(BASE_RES).padStart(2, '0');			
 		}
+
+		//Already traded
+		var tradedStatusStr = this.hasAlreadyTraded? '1' : 0;
 				
 		
 		return (
 			tilesStr + 		//Tiles
 			nodesStr + 		//Nodes
 			roadsStr + 		//Roads
-			this.phase +   //Phase
-			this.turn + 	//Turn
+			//this.phase +   //Phase
+			constants.SIDES_TO_PROTOCOL[this.turn] + 	//Turn
 			resStr1  +		//Player 1 resources
-			resStr2  		//Player 2 resources
-		);
+			resStr2  +		//Player 2 resources
+			tradedStatusStr //Already traded
+		).toLowerCase();
 	}
 	
 	addNode = (nid) => {		
@@ -550,6 +558,63 @@ export class Board {
 
 	}
 
+	playActions = (actions) => { //Actions is an array of KMN action strings
+		console.log(actions);
+		for (var a = 0; a < actions.length; a++){
+			var action = actions[a].toUpperCase();
+			var actionChar = action[0];
+
+			//Start
+			if (actionChar == 'S') { 
+				var nid = Number.parseInt(action.substr(1,2));
+				var rid = Number.parseInt(action.substr(3));
+				var actionAddNode = this.addNode(nid);				
+				if (actionAddNode.status) {
+					console.log('Added node', nid);
+					var actionAddRoad = this.addRoad(rid);	
+					if (!actionAddRoad.status) return actionAddRoad;	
+					else console.log('Added road', rid);				
+				}
+				else return actionAddNode;
+			}
+
+			//Trade
+			else if (actionChar == 'T') {
+				var tradeResids = [
+					residFromChar(action[1]), 
+					residFromChar(action[2]), 
+					residFromChar(action[3]),
+					residFromChar(action[4])
+				];
+				var tradeAction = this.trade(tradeResids);
+				if (!tradeAction.status) return tradeAction;
+				else console.log('traded', tradeResids);
+			}
+
+			//Build node
+			else if (actionChar == 'B') {
+				var nid = Number.parseInt(action.substr(1,2));
+				var actionAddNode = this.addNode(nid);
+				if (!actionAddNode.status) return actionAddNode;
+				else console.log('Added node', nid);
+			}
+
+			//Build road
+			else if (actionChar == 'R') {
+				var rid = Number.parseInt(action.substr(3));
+				var actionAddRoad = this.addRoad(rid);	
+					if (!actionAddRoad.status) return actionAddRoad;
+					else console.log('Added road', rid);
+			}
+
+			//End
+			else if (actionChar == 'E') {
+				return this.changeTurn();				
+			}
+		}
+		return {status:true, msg:''};
+	}
+
 	canAffordNode = (side) => {
 		if (this.res[side][constants.RES_GREEN] >= 2 && this.res[side][constants.RES_YELLOW] >= 2) return true;
 		else return false;
@@ -603,4 +668,14 @@ let ridInBounds = (rid) => {
 let itemAt = (r, c) => { //Bounded
 	if (r >= 0 && r < WIDTH_GRID && c >= 0 && c < WIDTH_GRID) return grid[r][c];
 	else return ITEM_NONE;
+}
+
+let residFromChar = (c) => {
+	switch(c) {
+		case 'B': return constants.RES_BLUE;
+		case 'G': return constants.RES_GREEN;
+		case 'Y': return constants.RES_YELLOW;
+		case 'R': return constants.RES_RED;
+		default: throw new Error('Invalid color char' + c);
+	}
 }

@@ -1,6 +1,7 @@
 import * as constants from '../core/constants.js';
 import {UNIT_TILE, UNIT_NODE, UNIT_ROAD, RES_COLORS, SIDE_COLORS} from './constants-ui.js';
 import {Board, DEFAULT_BOARD_STATE} from '../core/board.js';
+import * as networkPlayer from '../../lib/network-player.js';
 
 
 import { html, Component } from '../../lib/preact.js';
@@ -26,6 +27,10 @@ export class BoardUI extends Component {
 		//this.board = Board.fromString(DEFAULT_BOARD_STATE);
 		this.board = new Board();
 		this.board.init();
+		
+		//let state = new kelvandor.State();
+		//console.log(state.toString());						
+		//state.delete();
 	}
 		
 	
@@ -33,7 +38,7 @@ export class BoardUI extends Component {
 	onNodeClick = (nid) => {
 		var action = this.board.addNode(nid);		
 		if (action.status) {			
-			window.location.hash = this.board.toString();			
+			//window.location.hash = this.board.toString();			
 		}
 		this.flashMsg(action.msg);	
 	}
@@ -41,7 +46,7 @@ export class BoardUI extends Component {
 	onRoadClick = (rid) => {
 		var action = this.board.addRoad(rid);
 		if (action.status) {			
-			window.location.hash = this.board.toString();			
+			//window.location.hash = this.board.toString();			
 		}
 		this.flashMsg(action.msg);	
 	}
@@ -60,7 +65,16 @@ export class BoardUI extends Component {
 	
 	onShuffle = (e) => {
 		this.board.shuffle();
-		this.forceUpdate();		
+		this.forceUpdate();	
+	}
+
+	playRandom = (e) => {		
+		var self = this;
+		networkPlayer.getMove(this.board.toString(), function(actions) {
+			var actionResult = self.board.playActions(actions);
+			self.flashMsg(actionResult.msg);	
+		});
+
 	}
 
 	onHarvest = (e) => {
@@ -72,8 +86,8 @@ export class BoardUI extends Component {
 		var action = this.board.changeTurn();
 		if (action.status) {
 			var boardStr = this.board.toString();				
-			window.location.hash = boardStr;
-			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27}));
+			//window.location.hash = boardStr;
+			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27})); //Hack to clear trade UI						
 		}
 		this.flashMsg(action.msg);
 	}
@@ -156,12 +170,24 @@ export class BoardUI extends Component {
 		);
 	}
 
+	//renderPlayers = () => {
+	//	return (
+	//		html `
+	//			<label for="selectPlayers">Player 1: </label>
+	//			<select id="selectPlayers">
+	//				<option>Human</option>
+	//			</select>
+	//		`
+	//	);
+	//}
+
 	render () {						
 		var turn = this.board.turn == constants.SIDE_1? 'Player 1' : 'Player 2';
 		return (		
 			html`
-				<div style="float:right">
-				<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button><br/>
+				<div id="panel">				
+					<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button> <br/>
+					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Random</button>
 				</div>
 				${this.renderDone()}
 				
