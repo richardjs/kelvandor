@@ -221,7 +221,7 @@ int mcts(const struct State *state) {
     fprintf(stderr, "iterations:\t%d\n", ITERATIONS);
     fprintf(stderr, "actions:\t%d\n", root->state.actionCount);
     fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
-    fprintf(stderr, "tree size:\t%d MB\n", stats.nodes * sizeof(struct Node) / 1024 / 1024);
+    fprintf(stderr, "tree size:\t%d MiB\n", stats.nodes * sizeof(struct Node) / 1024 / 1024);
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
     fprintf(stderr, "simulations:\t%d\n", stats.simulations);
     fprintf(stderr, "depth outs:\t%d\n", stats.depthOuts);
