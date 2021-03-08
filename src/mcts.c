@@ -170,7 +170,9 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
     fprintf(fp, "value %f\n", root->value);
     fprintf(fp, "visits %d\n", root->visits);
     for (int i = 0; i < root->state.actionCount; i++) {
-        fprintf(fp, "child %d\n", childIDs[i]);
+        char actionString[ACTION_STRING_SIZE];
+        Action_toString(&root->state.actions[i], actionString);
+        fprintf(fp, "child %s %d\n", actionString, childIDs[i]);
     }
     fprintf(fp, "\n");
 

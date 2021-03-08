@@ -2,6 +2,8 @@ class Node:
     def __init__(self, node_id):
         self.id = node_id
         self.string = None
+        self.action = None
+        self.parent = None
         self.value = None
         self.visits = None
         self.children = []
@@ -14,7 +16,7 @@ class Node:
             return 0.0
 
     def __str__(self):
-        return f'node {self.id}, score {self.score:.2f}, visits {self.visits}, {len(self.children)} children'
+        return f'node {self.id}, action {self.action}, score {self.score:.2f}, visits {self.visits}, {len(self.children)} children'
 
     def __repr__(self):
         return str(self)
@@ -32,7 +34,7 @@ for line in open('tree.txt'):
     if not line:
         continue
 
-    key, value = line.split(' ')
+    key, value = line.split(' ', 1)
 
     if key == 'node':
         node_id = int(value)
@@ -45,7 +47,11 @@ for line in open('tree.txt'):
     elif key == 'visits':
         node.visits = int(value)
     elif key == 'child':
-        node.children.append(nodes[int(value)])
+        action, child_id = value.split(' ')
+        child_id = int(child_id)
+        node.children.append(nodes[child_id])
+        node.children[-1].action = action
+        node.children[-1].parent = node
     else:
         print('Unknown key:', key)
 
@@ -54,4 +60,4 @@ for node in nodes.values():
 
 root = nodes[0]
 
-print('Done! Access root node at `root`.')
+print('Done! Access root node at `root`, all nodes at `nodes`.')
