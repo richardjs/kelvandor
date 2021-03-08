@@ -463,4 +463,8 @@ void State_printDetail(const struct State *state) {
 		}
 		fprintf(stderr, "\n");
 	}
+
+    char stateString[STATE_STRING_SIZE];
+    State_toString(state ,stateString);
+    fprintf(stderr, "%s\n", stateString);
 }
