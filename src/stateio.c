@@ -457,10 +457,12 @@ void State_printDetail(const struct State *state) {
 		fprintf(stderr, "\tBlocked:\t%lx\n", state->blocked[player]);
         #endif
 
-		for (enum Resource resource = 0; resource < NUM_RESOURCES; resource++) {
-            fprintf(stderr, "\tResource %d: %d",
-                resource, state->resources[player][resource]);
-		}
+        fprintf(stderr, "\tResources: %dg %dy %db %dr",
+            state->resources[player][GREEN],
+            state->resources[player][YELLOW],
+            state->resources[player][BLUE],
+            state->resources[player][RED]);
+
 		fprintf(stderr, "\n");
 	}
 
