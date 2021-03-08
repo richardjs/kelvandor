@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "random.h"
+#include "mcts.h"
 #include "state.h"
 
 #include <stdio.h>
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     struct State state;
     State_fromString(&state, argv[1]);
 
-    randomMoves(&state);
+    mcts(&state);
 
     return 0;
 }
