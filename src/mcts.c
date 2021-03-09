@@ -247,7 +247,7 @@ int mcts(const struct State *state) {
     Action_toString(bestAction, actionString);
     printf("%s\n", actionString);
 
-    State_printDetail(state);
+    State_print(state);
     fprintf(stderr, "action:\t\t%s\n", actionString);
     fprintf(stderr, "value:\t\t%f\n", bestScore);
     fprintf(stderr, "visits:\t\t%d\n", bestChild->visits);
@@ -260,6 +260,11 @@ int mcts(const struct State *state) {
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
     fprintf(stderr, "simulations:\t%d\n", stats.simulations);
     fprintf(stderr, "depth out pct:\t%f%%\n", (float)stats.depthOuts/stats.simulations);
+
+    struct State afterState = *state;
+    State_act(&afterState, bestAction);
+
+    State_print(&afterState);
 
     #ifdef KELV_LOGACTIONVALUES
     fprintf(stderr, "action values:\n");
