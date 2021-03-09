@@ -208,8 +208,6 @@ int mcts(const struct State *state) {
     struct timeval start;
     gettimeofday(&start, NULL);
 
-    // TODO Repeat iteratons on best children until it is not our turn
-    // anymore, to reuse to data in the tree
     for (int i = 0; i < ITERATIONS; i++) {
         struct State s = *state;
         iterate(root, &s, 0);
@@ -224,20 +222,29 @@ int mcts(const struct State *state) {
     gettimeofday(&end, NULL);
     int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
 
-    struct Action bestAction;
     float bestScore = -INFINITY;
+    const struct Action *bestAction;
     struct Node *bestChild = NULL;
     for (int i = 0; i < state->actionCount; i++) {
-        float score = root->children[i]->value / root->children[i]->visits;
+        const struct Action *action = &state->actions[i];
+
+        float scoreSign = 1;
+        struct State s = *state;
+        State_act(&s, action);
+        if (state->turn != s.turn) {
+            scoreSign = -1;
+        }
+        float score = scoreSign * root->children[i]->value / root->children[i]->visits;
+
         if (score > bestScore) {
-            bestAction = state->actions[i];
             bestScore = score;
+            bestAction = action;
             bestChild = root->children[i];
         }
     }
 
     char actionString[ACTION_STRING_SIZE];
-    Action_toString(&bestAction, actionString);
+    Action_toString(bestAction, actionString);
     printf("%s\n", actionString);
 
     State_printDetail(state);
