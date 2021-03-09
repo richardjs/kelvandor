@@ -188,7 +188,7 @@ export class BoardUI extends Component {
 			html`
 				<div id="panel">				
 					<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button> <br/>
-					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Random</button>
+					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button>
 				</div>
 				${this.renderDone()}
 				

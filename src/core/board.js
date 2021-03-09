@@ -592,15 +592,15 @@ export class Board {
 			}
 
 			//Build node
-			else if (actionChar == 'B') {
+			else if (actionChar == 'N') {
 				var nid = Number.parseInt(action.substr(1,2));
 				var actionAddNode = this.addNode(nid);
 				if (!actionAddNode.status) return actionAddNode;
 				else console.log('Added node', nid);
 			}
 
-			//Build road
-			else if (actionChar == 'R') {
+			//Build branch (road)
+			else if (actionChar == 'B') {
 				var rid = Number.parseInt(action.substr(3));
 				var actionAddRoad = this.addRoad(rid);	
 					if (!actionAddRoad.status) return actionAddRoad;
