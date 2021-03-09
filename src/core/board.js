@@ -601,7 +601,7 @@ export class Board {
 
 			//Build branch (road)
 			else if (actionChar == 'B') {
-				var rid = Number.parseInt(action.substr(3));
+				var rid = Number.parseInt(action.substr(1));
 				var actionAddRoad = this.addRoad(rid);	
 					if (!actionAddRoad.status) return actionAddRoad;
 					else console.log('Added road', rid);
@@ -611,6 +611,8 @@ export class Board {
 			else if (actionChar == 'E') {
 				return this.changeTurn();				
 			}
+
+			else return {status:false, msg:'Unrecognized action: ' + actionChar};
 		}
 		return {status:true, msg:''};
 	}
