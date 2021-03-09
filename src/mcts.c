@@ -225,7 +225,7 @@ int mcts(const struct State *state) {
     int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
 
     float bestScore = -INFINITY;
-    const struct Action *bestAction;
+    const struct Action *bestAction = &state->actions[0];
     struct Node *bestChild = NULL;
     for (int i = 0; i < state->actionCount; i++) {
         const struct Action *action = &state->actions[i];
@@ -238,7 +238,7 @@ int mcts(const struct State *state) {
         }
         float score = scoreSign * root->children[i]->value / root->children[i]->visits;
 
-        if (score > bestScore) {
+        if (score >= bestScore) {
             bestScore = score;
             bestAction = action;
             bestChild = root->children[i];
