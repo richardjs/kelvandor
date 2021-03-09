@@ -384,7 +384,7 @@ void State_fromString(struct State *state, const char string[]) {
 void State_print(const struct State *state) {
     char nc[NUM_CORNERS];
     for (int i = 0; i < NUM_CORNERS; i++) {
-        char c = '.';
+        char c = '+';
         if ((1llu << i) & state->nodes[PLAYER_1]) {
             c = 'X';
         }
@@ -400,7 +400,31 @@ void State_print(const struct State *state) {
 
     char ec[NUM_EDGES];
     for (int i = 0; i < NUM_EDGES; i++) {
-        char c = ' ';
+        char c;
+        switch(i) {
+            case 1:
+            case 2:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+            case 15:
+            case 16:
+            case 17:
+            case 18:
+            case 19:
+            case 20:
+            case 26:
+            case 27:
+            case 28:
+            case 29:
+            case 33:
+            case 34:
+                c = '|';
+                break;
+            default:
+                c = '-';
+        }
         if ((1llu << i) & state->branches[PLAYER_1]) {
             c = 'x';
         }
