@@ -8,7 +8,7 @@
 
 
 int main(int argc, char *argv[]) {
-    fprintf(stderr, "Kelvandor v.1 (built %s %s)\n", __DATE__, __TIME__);
+    fprintf(stderr, "Kelvandor v.1a (built %s %s)\n", __DATE__, __TIME__);
 
     srand(time(NULL));
 
