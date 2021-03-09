@@ -68,6 +68,7 @@ void Node_free(struct Node *node) {
     free(node);
 }
 
+
 float simulate(struct State *state) {
     stats.simulations++;
     enum Player turn = state->turn;
@@ -158,13 +159,12 @@ float iterate(struct Node *root, struct State *state, unsigned int depth) {
 }
 
 
-/* TODO Update this for state-less nodes
-unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
+unsigned int dumpTree(FILE *fp, const struct Node *root, const struct State *state, unsigned int id) {
     int rootID = id++;
     int childIDs[MAX_ACTIONS];
 
     char stateString[STATE_STRING_SIZE];
-    State_toString(&root->state, stateString);
+    State_toString(state, stateString);
 
     if (!root->expanded) {
         fprintf(fp, "node %d\n", rootID);
@@ -173,24 +173,25 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
         return id;
     }
 
-    for (int i = 0; i < root->state.actionCount; i++) {
+    for (int i = 0; i < state->actionCount; i++) {
         childIDs[i] = id;
-        id = dumpTree(fp, root->children[i], id);
+        struct State s = *state;
+        State_act(&s, &state->actions[i]);
+        id = dumpTree(fp, root->children[i], &s, id);
     }
 
     fprintf(fp, "node %d\n", rootID);
     fprintf(fp, "value %f\n", root->value);
     fprintf(fp, "visits %d\n", root->visits);
-    for (int i = 0; i < root->state.actionCount; i++) {
+    for (int i = 0; i < state->actionCount; i++) {
         char actionString[ACTION_STRING_SIZE];
-        Action_toString(&root->state.actions[i], actionString);
+        Action_toString(&state->actions[i], actionString);
         fprintf(fp, "child %s %d\n", actionString, childIDs[i]);
     }
     fprintf(fp, "\n");
 
     return id;
 }
-*/
 
 
 int mcts(const struct State *state) {
@@ -262,15 +263,17 @@ int mcts(const struct State *state) {
     }
     #endif
 
+    #ifdef KELV_LOGACTIONS
     FILE* fp = fopen("tree.txt", "w");
     if (!fp) {
         fprintf(stderr, "WARNING: Couldn't dump tree to tree.txt\n");
     } else {
         fprintf(stderr, "Dumping tree to tree.txt...\n");
-        //dumpTree(fp, root, 0);
+        dumpTree(fp, root, state, 0);
         fclose(fp);
         fprintf(stderr, "Done\n");
     }
+    #endif
 
     Node_free(root);
     return 0;
