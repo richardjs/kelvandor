@@ -480,14 +480,13 @@ void State_print(const struct State *state) {
     } else {
         fprintf(stderr, " ");
     }
-    fprintf(stderr, "P1 % 2dg % 2dy % 2db % 2dr % 2d\n", state->resources[PLAYER_1][GREEN], state->resources[PLAYER_1][YELLOW], state->resources[PLAYER_1][BLUE], state->resources[PLAYER_1][RED], state->score[PLAYER_1]);
+    fprintf(stderr, "P1 % 2dg % 2dy % 2db % 2dr %2d\n", state->resources[PLAYER_1][GREEN], state->resources[PLAYER_1][YELLOW], state->resources[PLAYER_1][BLUE], state->resources[PLAYER_1][RED], state->score[PLAYER_1]);
     fprintf(stderr, "----------------------\n");
 }
 
 
 void State_printDetail(const struct State *state) {
 	State_print(state);
-	fprintf(stderr, "Turn:\t%d\n", state->turn);
     fprintf(stderr, "Action count: %d\t", state->actionCount);
     fprintf(stderr, "Trade done: %d\t", state->tradeDone);
     fprintf(stderr, "\n");
@@ -496,7 +495,6 @@ void State_printDetail(const struct State *state) {
 
 	for (enum Player player = 0; player < NUM_PLAYERS; player++) {
 		fprintf(stderr, "Player %d:", player);
-		fprintf(stderr, "\tScore:\t%d", state->score[player]);
 		fprintf(stderr, "\tNode count:\t%d", popcount(state->nodes[player]));
         #ifdef __EMSCRIPTEN__
 		fprintf(stderr, "\tCaptured:\t%x", state->captured[player]);
@@ -505,14 +503,6 @@ void State_printDetail(const struct State *state) {
 		fprintf(stderr, "\tCaptured:\t%lx", state->captured[player]);
 		fprintf(stderr, "\tBlocked:\t%lx\n", state->blocked[player]);
         #endif
-
-        fprintf(stderr, "\tResources: %dg %dy %db %dr",
-            state->resources[player][GREEN],
-            state->resources[player][YELLOW],
-            state->resources[player][BLUE],
-            state->resources[player][RED]);
-
-		fprintf(stderr, "\n");
 	}
 
     char stateString[STATE_STRING_SIZE];
