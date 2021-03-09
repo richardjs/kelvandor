@@ -361,16 +361,23 @@ void State_fromString(struct State *state, const char string[]) {
     state->turn = string[s++] - '1';
 
     // Resources
-    for (enum Player player = 0; player < NUM_PLAYERS; player++) {
-        unsigned int blue, green, red, yellow;
-        sscanf(&string[s], "%02x%02x%02x%02x",
-            &green, &yellow, &blue, &red
-        );
-        s += 2*4;
-        state->resources[player][GREEN] = green;
-        state->resources[player][YELLOW] = yellow;
-        state->resources[player][BLUE] = blue;
-        state->resources[player][RED] = red;
+    // Don't load resources if we're in the start phase
+    // (Node & Roads has resources here during the start phase)
+    if (popcount(state->nodes[PLAYER_1]) >= START_NODES
+            && popcount(state->nodes[PLAYER_2]) >= START_NODES) {
+        for (enum Player player = 0; player < NUM_PLAYERS; player++) {
+            unsigned int blue, green, red, yellow;
+            sscanf(&string[s], "%02x%02x%02x%02x",
+                &green, &yellow, &blue, &red
+            );
+            s += 2*NUM_RESOURCES;
+            state->resources[player][GREEN] = green;
+            state->resources[player][YELLOW] = yellow;
+            state->resources[player][BLUE] = blue;
+            state->resources[player][RED] = red;
+        }
+    } else {
+        s += 2*NUM_RESOURCES*NUM_PLAYERS;
     }
 
     // Trade status
