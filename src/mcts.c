@@ -18,43 +18,41 @@ struct Stats stats;
 
 
 struct Node {
-    struct State state;
-
     bool expanded;
-    struct Node **children;
-
     unsigned int visits;
     float value;
+
+    struct Node **children;
+    uint_fast8_t childrenCount;
 };
 
 
-void Node_init(struct Node *node, const struct State *state) {
-    node->state  = *state;
+void Node_init(struct Node *node) {
     node->expanded = false;
     node->visits = 0;
     node->value = 0;
-    stats.nodes++;
 
-    node->children = malloc(sizeof(struct Node*) * node->state.actionCount);
-    if (node->children == NULL) {
-        fprintf(stderr, "malloc failed in Node_init\n");
-        exit(6);
-    }
-    stats.treeBytes += sizeof(struct Node*) * node->state.actionCount;
+    stats.nodes++;
 }
 
 
-void Node_expand(struct Node *node) {
-    for (int i = 0; i < node->state.actionCount; i++) {
+void Node_expand(struct Node *node, const struct State *state) {
+    node->childrenCount = state->actionCount;
+    node->children = malloc(sizeof(struct Node*) * node->childrenCount);
+    if (node->children == NULL) {
+        fprintf(stderr, "malloc failed in Node_expand\n");
+        exit(6);
+    }
+    stats.treeBytes += sizeof(struct Node*) * node->childrenCount;
+
+    for (int i = 0; i < state->actionCount; i++) {
         node->children[i] = malloc(sizeof(struct Node));
         if (node->children[i] == NULL) {
             fprintf(stderr, "malloc failed in Node_expand\n");
             exit(3);
         }
         stats.treeBytes += sizeof(struct Node);
-        Node_init(node->children[i], &node->state);
-
-        State_act(&node->children[i]->state, &node->state.actions[i]);
+        Node_init(node->children[i]);
     }
     node->expanded = true;
 }
@@ -62,7 +60,7 @@ void Node_expand(struct Node *node) {
 
 void Node_free(struct Node *node) {
     if (node->expanded) {
-        for (int i = 0; i < node->state.actionCount; i++) {
+        for (int i = 0; i < node->childrenCount; i++) {
             Node_free(node->children[i]);
         }
     }
@@ -98,22 +96,21 @@ float simulate(struct State *state) {
 }
 
 
-float iterate(struct Node *root, unsigned int depth) {
+float iterate(struct Node *root, struct State *state, unsigned int depth) {
     if (depth > stats.maxTreeDepth) {
         stats.maxTreeDepth = depth;
     }
 
-    if (root->expanded == false) {
-        Node_expand(root);
+    if (!root->expanded) {
+        Node_expand(root, state);
     }
 
-    if (root->state.actionCount == 0) {
-        // TODO we use this branch a couple times; probably should be a
-        // function
+    if (state->actionCount == 0) {
+        // TODO we use this branch a couple times; probably should be a function
         float score;
-        if (root->state.score[root->state.turn] >= WIN_SCORE) {
+        if (state->score[state->turn] >= WIN_SCORE) {
             score = INFINITY;
-        } else if (root->state.score[!root->state.turn] >= WIN_SCORE) {
+        } else if (state->score[!state->turn] >= WIN_SCORE) {
             score = -INFINITY;
         } else {
             score = 0.0;
@@ -125,8 +122,7 @@ float iterate(struct Node *root, unsigned int depth) {
     }
 
     if (root->visits == 0) {
-        struct State state = root->state;
-        float score = simulate(&state);
+        float score = simulate(state);
 
         root->visits++;
         root->value += score;
@@ -135,19 +131,26 @@ float iterate(struct Node *root, unsigned int depth) {
 
     // TODO implement uct
     struct Node *child = NULL;
-    for (int i = 0; i < root->state.actionCount; i++) {
+    int childIndex = 0;
+    for (int i = 0; i < state->actionCount; i++) {
         if (root->children[i]->visits == 0) {
             child = root->children[i];
+            childIndex = i;
+            break;
         }
     }
     if (child == NULL) {
-        child = root->children[rand() % root->state.actionCount];
+        childIndex = rand() % state->actionCount;
+        child = root->children[childIndex];
     }
 
-    float score = iterate(child, depth+1);
-    if (child->state.turn != root->state.turn) {
-        score *= -1;
+    enum Player turn = state->turn;
+    State_act(state, &state->actions[childIndex]);
+    float scoreSign = 1;
+    if (state->turn != turn) {
+        scoreSign = -1;
     }
+    float score = scoreSign * iterate(child, state, depth+1);
 
     root->visits++;
     root->value += score;
@@ -155,6 +158,7 @@ float iterate(struct Node *root, unsigned int depth) {
 }
 
 
+/* TODO Update this for state-less nodes
 unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
     int rootID = id++;
     int childIDs[MAX_ACTIONS];
@@ -186,6 +190,7 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, unsigned int id) {
 
     return id;
 }
+*/
 
 
 int mcts(const struct State *state) {
@@ -197,7 +202,7 @@ int mcts(const struct State *state) {
         exit(4);
     }
     stats.treeBytes += sizeof(struct Node);
-    Node_init(root, state);
+    Node_init(root);
 
     struct timeval start;
     gettimeofday(&start, NULL);
@@ -205,7 +210,8 @@ int mcts(const struct State *state) {
     // TODO Repeat iteratons on best children until it is not our turn
     // anymore, to reuse to data in the tree
     for (int i = 0; i < ITERATIONS; i++) {
-        iterate(root, 0);
+        struct State s = *state;
+        iterate(root, &s, 0);
 
         if (i % (ITERATIONS/10) == 0) {
             fprintf(stderr, ".");
@@ -220,10 +226,10 @@ int mcts(const struct State *state) {
     struct Action bestAction;
     float bestScore = -INFINITY;
     struct Node *bestChild = NULL;
-    for (int i = 0; i < root->state.actionCount; i++) {
+    for (int i = 0; i < state->actionCount; i++) {
         float score = root->children[i]->value / root->children[i]->visits;
         if (score > bestScore) {
-            bestAction = root->state.actions[i];
+            bestAction = state->actions[i];
             bestScore = score;
             bestChild = root->children[i];
         }
@@ -240,7 +246,7 @@ int mcts(const struct State *state) {
     fprintf(stderr, "iterations:\t%d\n", ITERATIONS);
     fprintf(stderr, "time:\t\t%d ms\n", duration);
     fprintf(stderr, "iter/s:\t\t%f\n", (float)ITERATIONS/duration*1000);
-    fprintf(stderr, "actions:\t%d\n", root->state.actionCount);
+    fprintf(stderr, "actions:\t%d\n", state->actionCount);
     fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
     fprintf(stderr, "tree size:\t%lld MiB\n", stats.treeBytes / 1024 / 1024);
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
@@ -261,7 +267,7 @@ int mcts(const struct State *state) {
         fprintf(stderr, "WARNING: Couldn't dump tree to tree.txt\n");
     } else {
         fprintf(stderr, "Dumping tree to tree.txt...\n");
-        dumpTree(fp, root, 0);
+        //dumpTree(fp, root, 0);
         fclose(fp);
         fprintf(stderr, "Done\n");
     }
