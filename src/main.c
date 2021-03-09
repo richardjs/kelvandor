@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     struct State state;
     State_fromString(&state, argv[1]);
 
-    mcts(&state);
+    mcts(&state, NULL);
 
     return 0;
 }

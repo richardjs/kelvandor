@@ -17,16 +17,6 @@ struct Stats {
 struct Stats stats;
 
 
-struct Node {
-    bool expanded;
-    unsigned int visits;
-    float value;
-
-    struct Node **children;
-    uint_fast8_t childrenCount;
-};
-
-
 void Node_init(struct Node *node) {
     node->expanded = false;
     node->visits = 0;
@@ -194,18 +184,25 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, const struct State *sta
 }
 
 
-int mcts(const struct State *state) {
+void mcts(const struct State *state, struct Node *root) {
     fprintf(stderr, "Monte Carlo tree search\n");
 
-    memset(&stats, 0, sizeof(struct Stats));
-
-    struct Node *root = malloc(sizeof(struct Node));
+    bool ownRoot = root == NULL;
     if (root == NULL) {
-        fprintf(stderr, "root malloc failed in mcts\n");
-        exit(4);
+        fprintf(stderr, "Creating new tree\n");
+
+        memset(&stats, 0, sizeof(struct Stats));
+
+        root = malloc(sizeof(struct Node));
+        if (root == NULL) {
+            fprintf(stderr, "root malloc failed in mcts\n");
+            exit(4);
+        }
+        stats.treeBytes += sizeof(struct Node);
+        Node_init(root);
+    } else {
+        fprintf(stderr, "Using existing tree\n");
     }
-    stats.treeBytes += sizeof(struct Node);
-    Node_init(root);
 
     struct timeval start;
     gettimeofday(&start, NULL);
@@ -227,6 +224,7 @@ int mcts(const struct State *state) {
     float bestScore = -INFINITY;
     const struct Action *bestAction = NULL;
     struct Node *bestChild = NULL;
+    int bestIndex = 0;
     for (int i = 0; i < state->actionCount; i++) {
         const struct Action *action = &state->actions[i];
 
@@ -245,6 +243,7 @@ int mcts(const struct State *state) {
             bestScore = score;
             bestAction = action;
             bestChild = root->children[i];
+            bestIndex = i;
         }
     }
 
@@ -302,6 +301,13 @@ int mcts(const struct State *state) {
     }
     #endif
 
-    Node_free(root);
-    return 0;
+    if (state->turn == afterState.turn && MULTIACTION) {
+        struct Node* next = root->children[bestIndex];
+        // TODO Free up parts of the tree that we won't use after recursing
+        mcts(&afterState, next);
+    }
+
+    if (ownRoot) {
+        Node_free(root);
+    }
 }
