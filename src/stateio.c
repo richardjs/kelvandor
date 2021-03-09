@@ -456,7 +456,7 @@ void State_print(const struct State *state) {
     } else {
         fprintf(stderr, " ");
     }
-    fprintf(stderr, "P2 %02dg %02dy %02db %02dr %02d\n", state->resources[PLAYER_2][GREEN], state->resources[PLAYER_2][YELLOW], state->resources[PLAYER_2][BLUE], state->resources[PLAYER_2][RED], state->score[PLAYER_2]);
+    fprintf(stderr, "P2 % 2dg % 2dy % 2db % 2dr % 2d\n", state->resources[PLAYER_2][GREEN], state->resources[PLAYER_2][YELLOW], state->resources[PLAYER_2][BLUE], state->resources[PLAYER_2][RED], state->score[PLAYER_2]);
     fprintf(stderr, "         %c%c%c%c\n", nc[0], ec[0], ec[0], nc[1]);
     fprintf(stderr, "         %c%c%c%c\n", ec[1], rc[0], lc[0], ec[2]);
     fprintf(stderr, "      %c%c%c%c%c%c%c%c%c%c\n", nc[2], ec[3], ec[3], nc[3], ec[4], ec[4], nc[4], ec[5], ec[5], nc[5]);
@@ -473,7 +473,7 @@ void State_print(const struct State *state) {
     } else {
         fprintf(stderr, " ");
     }
-    fprintf(stderr, "P1 %02dg %02dy %02db %02dr %02d\n", state->resources[PLAYER_1][GREEN], state->resources[PLAYER_1][YELLOW], state->resources[PLAYER_1][BLUE], state->resources[PLAYER_1][RED], state->score[PLAYER_1]);
+    fprintf(stderr, "P1 % 2dg % 2dy % 2db % 2dr % 2d\n", state->resources[PLAYER_1][GREEN], state->resources[PLAYER_1][YELLOW], state->resources[PLAYER_1][BLUE], state->resources[PLAYER_1][RED], state->score[PLAYER_1]);
     fprintf(stderr, "----------------------\n");
 }
 
