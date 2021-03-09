@@ -195,6 +195,8 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, const struct State *sta
 
 
 int mcts(const struct State *state) {
+    fprintf(stderr, "Monte Carlo tree search\n");
+
     memset(&stats, 0, sizeof(struct Stats));
 
     struct Node *root = malloc(sizeof(struct Node));

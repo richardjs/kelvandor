@@ -16,6 +16,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: %s <serialized board>\n", argv[0]);
         return 1;
     }
+
+    fprintf(stderr, "Input: %s\n", argv[1]);
     if (!validStateString(argv[1])) {
         fprintf(stderr, "Invalid state string: %s\n", argv[1]);
         return 2;
