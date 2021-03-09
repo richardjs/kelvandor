@@ -346,6 +346,22 @@ int main() {
     }
 
 
+    // Test for a bug allowing node builds without enough resources
+    {
+        State_fromString(&state, "r2g1b2r3g2y2v0g3y1b3r1b1y3000020000100001200000000000000002001120001000022000100000000201010000020002040");
+        for (int i = 0; i < state.actionCount; i++) {
+            if (state.actions[i].type == NODE) {
+                printf("Build node action when not enough resources\n");
+                State_print(&state);
+                char actionString[ACTION_STRING_SIZE];
+                Action_toString(&state.actions[i], actionString);
+                printf("%s\n", actionString);
+                return 5;
+            }
+        }
+    }
+
+
     printf("Done\n");
     return 0;
 }   

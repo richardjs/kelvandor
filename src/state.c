@@ -312,7 +312,7 @@ void State_deriveActions(struct State *state) {
         }
     }
 
-    if (state->resources[state->turn][YELLOW >= NODE_COST]
+    if (state->resources[state->turn][YELLOW] >= NODE_COST
            && state->resources[state->turn][GREEN] >= NODE_COST) {
         bits = adjacentCorners;
         while (bits) {
