@@ -247,6 +247,7 @@ int mcts(const struct State *state) {
     Action_toString(bestAction, actionString);
     printf("%s\n", actionString);
 
+    fprintf(stderr, "Input state:\n");
     State_print(state);
     char stateString[STATE_STRING_SIZE];
     State_toString(state, stateString);
@@ -270,6 +271,7 @@ int mcts(const struct State *state) {
     struct State afterState = *state;
     State_act(&afterState, bestAction);
 
+    fprintf(stderr, "Output state:\n");
     State_print(&afterState);
     State_toString(&afterState, stateString);
     fprintf(stderr, "%s\n", stateString);
