@@ -22,10 +22,10 @@ treeinspect:
 
 
 wasm:
-	emcc -Wall -c state.c -o state.o
-	emcc -Wall -c stateio.c -o stateio.o
-	emcc -Wall -c layout.c -o layout.o
-	emcc -Wall --bind wasmlib.cpp state.o stateio.o layout.o \
+	emcc -O2 -Wall -c state.c -o state.o
+	emcc -O2 -Wall -c stateio.c -o stateio.o
+	emcc -O2 -Wall -c layout.c -o layout.o
+	emcc -O2 -Wall --bind wasmlib.cpp state.o stateio.o layout.o \
 				--pre-js pre.js -o kelvandor.js
 	mkdir -p ../wasm
 	mv kelvandor.wasm ../wasm
