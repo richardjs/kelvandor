@@ -302,20 +302,7 @@ export class Board {
 
 		//Add node
 		this.buyNode(side, nid);
-		
-
-		//Exhaust tiles
-		var tids = adj.TILES_ADJ_NODE[nid];		
-		for (var t = 0; t < tids.length; t++) {
-			var tid = tids[t];			
-			var tile = this.tiles[tid];
-			if (tile.captured != constants.SIDE_NONE) continue;//Don't exhaust if captured
-			else if (tile.color == constants.RES_VACANT) continue;			
-			var nodeCount = this.countNodesOnTile(tid);			
-			if (nodeCount > tile.value) this.tiles[tid].isExhausted = true;
-			
-		}
-		
+				
 		return {status:true, msg:'Node added...'};
 	}
 	
@@ -407,6 +394,18 @@ export class Board {
 		this.res[side][constants.RES_GREEN]-=2;
 		this.res[side][constants.RES_YELLOW]-=2;
 		this.nodes[nid].side = side;
+
+		//Exhaust tiles
+		var tids = adj.TILES_ADJ_NODE[nid];		
+		for (var t = 0; t < tids.length; t++) {
+			var tid = tids[t];			
+			var tile = this.tiles[tid];
+			if (tile.captured != constants.SIDE_NONE) continue;//Don't exhaust if captured
+			else if (tile.color == constants.RES_VACANT) continue;			
+			var nodeCount = this.countNodesOnTile(tid);			
+			if (nodeCount > tile.value) this.tiles[tid].isExhausted = true;
+			
+		}
 	}
 
 	buyRoad = (side, rid) => {
@@ -547,7 +546,9 @@ export class Board {
 	}
 
 	trade = (tradeResids) => {		
-		if (this.hasAlreadyTraded) return {status:false, msg:'Player has already traded once'};
+		if (this.hasAlreadyTraded) return {status:false, msg:'Player has already traded once...'};
+		var target = tradeResids[3];
+		if (target == tradeResids[0] || target == tradeResids[1] || target == tradeResids[2]) return {status:false, msg:'Resource may not be traded for itself...'}; 
 		var side = this.turn;
 		this.res[side][tradeResids[0]]--;
 		this.res[side][tradeResids[1]]--;

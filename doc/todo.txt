@@ -1,1 +1,15 @@
-Capture perimeter
+Required
+*Capture perimeter
+- shorter urls ()
+ 
+
+Would be nice:
+- rename protocol to kelvandor
+- Player controls
+- Wasm player?
+- Remove board initializer code 
+- undo / redo
+- show opponent res
+- show score breakdowns
+- heuristic player
+- game events

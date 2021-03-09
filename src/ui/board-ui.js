@@ -9,11 +9,12 @@ import { TileUI } from './tile-ui.js';
 import { NodeUI } from './node-ui.js';
 import { RoadUI } from './road-ui.js';
 import { ResUI } from './res-ui.js';
+import { ResMiniUI } from './res-mini-ui.js';
 import { ScoreUI } from './score-ui.js';
 import { TurnUI } from './turn-ui.js';
 
 const KEY_ENTER = 13;
-const DELAY_FLASH_MSG = 1000; //MS
+const DELAY_FLASH_MSG = 2000; //MS
 
 
 export class BoardUI extends Component {
@@ -160,6 +161,10 @@ export class BoardUI extends Component {
 		return html`<${ResUI} side=${side} res=${res} x=${x} y=${y} onTrade=${this.onTrade}/>`;
 	}
 	
+	renderResMini = (x, y, side) => {				
+		if (this.board.phase != constants.PHASE_PLAY) return;
+		return html`<${ResMiniUI} res=${this.board.res[side]} x=${x} y=${y} />`;
+	}
 	
 
 	renderDone = () => {
@@ -184,6 +189,8 @@ export class BoardUI extends Component {
 
 	render () {						
 		var turn = this.board.turn == constants.SIDE_1? 'Player 1' : 'Player 2';
+		var side = this.board.turn;
+		var oppSide = this.board.turn == constants.SIDE_1? constants.SIDE_2 : constants.SIDE_1;
 		return (		
 			html`
 				<div id="panel">				
@@ -195,12 +202,13 @@ export class BoardUI extends Component {
 				<svg width="800" height="800" style="border:1px solid black;">
 					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[0]}/>
 					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[1]}/>
-					<${TurnUI} x="10" y="575" label="Turn:" value=${turn} phase=${this.board.phase}/>
-					
+					<${TurnUI} x="10" y="575" label="Turn:" value=${turn} phase=${this.board.phase}/>												
+					${this.renderResMini(415, 5, oppSide)}																
+
 					${this.renderTiles()}
 					${this.renderRoads()}
 					${this.renderNodes()}
-					${this.renderRes(70, 620, this.board.turn)}																
+					${this.renderRes(70, 620, side)}																
 				</svg>				
 				<div id="msg">${this.state.msg}</div>
 			`
