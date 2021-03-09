@@ -72,6 +72,7 @@ export class BoardUI extends Component {
 		var self = this;
 		networkPlayer.getMove(this.board.toString(), function(actions) {
 			var actionResult = self.board.playActions(actions);
+			if (actionResult.msg)console.log(actionResult.msg);
 			self.flashMsg(actionResult.msg);	
 		});
 
