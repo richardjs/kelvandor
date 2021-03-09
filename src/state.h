@@ -30,7 +30,7 @@
 #define NODE_COST 2
 #define WIN_SCORE 10
 #define STATE_STRING_SIZE 105
-#define ACTION_STRING_SIZE 5
+#define ACTION_STRING_SIZE 6
 
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};

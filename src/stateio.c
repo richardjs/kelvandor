@@ -19,6 +19,7 @@ void Action_toString(const struct Action *action, char string[]) {
             int edge = CORNER_ADJACENT_EDGES[node][dir];
 
             sprintf(string, "s%02d%02d", node, edge);
+            string[5] = '\0';
             break;
         }
 
@@ -31,16 +32,19 @@ void Action_toString(const struct Action *action, char string[]) {
             sprintf(string, "t%c%c%c%c",
                 RESOURCE_CHARS[in1], RESOURCE_CHARS[in2],
                 RESOURCE_CHARS[in3], RESOURCE_CHARS[out]);
+            string[5] = '\0';
             break;
         }
 
         case BRANCH: {
             sprintf(string, "b%02d", action->data);
+            string[3] = '\0';
             break;
         }
 
         case NODE: {
             sprintf(string, "n%02d", action->data);
+            string[3] = '\0';
             break;
         }
 
