@@ -31,7 +31,11 @@ void Node_init(struct Node *node, uint8_t depth) {
     }
 }
 
-
+// Node_expand dose the following:
+// -    allocates space for children pointers
+// -    allocates space for each child
+// -    calls Node_init on each child node
+// -    sets node.expanded = true
 void Node_expand(struct Node *node, const struct State *state) {
     node->childrenCount = state->actionCount;
     node->children = malloc(sizeof(struct Node*) * node->childrenCount);
@@ -83,9 +87,9 @@ float simulate(struct State *state) {
         State_act(state, &action);
     }
 
-    if (state->score[turn] >= 10) {
+    if (state->score[turn] >= WIN_SCORE) {
         return 1.0;
-    } else if (state->score[!turn] >= 10) {
+    } else if (state->score[!turn] >= WIN_SCORE) {
         return -1.0;
     } else {
         return 0.0;
@@ -94,6 +98,7 @@ float simulate(struct State *state) {
 
 
 float iterate(struct Node *root, struct State *state) {
+    // If we're at a terminal node
     if (state->actionCount == 0) {
         // TODO we use this branch a couple times; probably should be a function
         float score;
@@ -114,7 +119,6 @@ float iterate(struct Node *root, struct State *state) {
         Node_expand(root, state);
     }
 
-
     if (root->visits == 0) {
         float score = simulate(state);
 
@@ -123,23 +127,28 @@ float iterate(struct Node *root, struct State *state) {
         return score;
     }
 
-    // TODO implement uct
-    struct Node *child = NULL;
     int childIndex = 0;
+    float bestUCT = -INFINITY;
     for (int i = 0; i < state->actionCount; i++) {
         if (root->children[i]->visits == 0) {
-            child = root->children[i];
             childIndex = i;
             break;
         }
-    }
-    if (child == NULL) {
-        childIndex = rand() % state->actionCount;
-        child = root->children[childIndex];
+
+        int scoreSign = Action_changesTurn(&state->actions[i], state) ? -1 : 1;
+        float uct = scoreSign*root->children[i]->value/root->children[i]->visits + UCTC*sqrtf(logf(root->visits)/root->children[i]->visits);
+
+        if (uct >= bestUCT) {
+            bestUCT = uct;
+            childIndex = i;
+        }
     }
 
     enum Player turn = state->turn;
+
+    struct Node *child = root->children[childIndex];
     State_act(state, &state->actions[childIndex]);
+
     float scoreSign = 1;
     if (state->turn != turn) {
         scoreSign = -1;

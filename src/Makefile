@@ -1,4 +1,4 @@
-CFLAGS=-std=c99 -Wall -O3
+CFLAGS=-std=c99 -Wall -O3 -lm
 
 
 objects=state.o stateio.o layout.o mcts.o random.o

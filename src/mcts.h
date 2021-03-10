@@ -7,6 +7,7 @@
 
 #define ITERATIONS 100000
 #define MAX_SIM_DEPTH 500
+#define UCTC 2
 #define MULTIACTION true
 
 
