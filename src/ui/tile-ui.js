@@ -17,7 +17,7 @@ export class TileUI extends Component {
 	}
 	
 	componentDidMount = () => {		
-		this.setState({fill:RES_COLORS[this.props.color]});
+		//this.setState({fill:RES_COLORS[this.props.color]});
 	}
 	
 	onMouseOver = (e) => {
@@ -55,7 +55,7 @@ export class TileUI extends Component {
 					y=${this.props.y} 		
 					width=${SIZE_TILE}
 					height=${SIZE_TILE}
-					fill=${this.state.fill}
+					fill=${RES_COLORS[this.props.color]}
 					onclick=${this.props.click}
 					onmouseover=${this.onMouseOver}
 					onmouseout=${this.onMouseOut}					
