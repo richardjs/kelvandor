@@ -65,8 +65,14 @@ export class BoardUI extends Component {
 
 	
 	onShuffle = (e) => {
+		this.board.reset();
 		this.board.shuffle();
-		this.forceUpdate();	
+		this.forceUpdate();
+	}
+
+	onReset = (e) => {
+		this.board.reset();
+		this.forceUpdate();
 	}
 
 	playRandom = (e) => {		
@@ -195,6 +201,7 @@ export class BoardUI extends Component {
 			html`
 				<div id="panel">				
 					<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button> <br/>
+					<button id="btnShuffle" onclick=${this.onReset}>Reset</button> <br/>
 					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button>
 				</div>
 				${this.renderDone()}

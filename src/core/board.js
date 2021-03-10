@@ -81,7 +81,7 @@ var defaultTileVals = [
 
 export const DEFAULT_BOARD_STATE = 'R2G1B2R3G2Y2V0G3Y1B3R1B1Y3222222222222222222222222222222222222222222222222222222222222000000000000000000';
 export class Board {
-	constructor() {			
+	_constructor = () => {
 		this.turn = constants.SIDE_1;
 		this.phase = constants.PHASE_PLACE1_1;// PHASE_PLAY;		
 		this.tiles = [];
@@ -90,7 +90,10 @@ export class Board {
 		this.scores = [0, 0];
 		this.res = [[4,4,2,2],[4,4,2,2]]; 
 		this.hasAlreadyTraded = false;		
-			
+	}
+
+	constructor() {
+		this._constructor();
 	}
 	
 	init = () => {				
@@ -118,6 +121,20 @@ export class Board {
 			}
 		}		
 		//console.log(this.toString());		
+	}
+
+	reset = () => {
+		var tiles = this.tiles;
+
+		this._constructor()
+		this.init();
+
+		this.tiles = tiles;
+
+		for (var i = 0; i < this.tiles.length; i++) {
+			this.tiles[i].isExhausted = false;
+			this.tiles[i].captured = constants.SIDE_NONE;
+		}
 	}
 	
 	shuffle = () => { //Fisher-Yates
