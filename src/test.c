@@ -195,7 +195,7 @@ int main() {
     }
 
 
-    // Test captured region build blocking and undoing after blocking
+    // Test captured region build blocking
     {
         State_randomStart(&state);
         state.nodes[PLAYER_1] = 0b1000000001;
@@ -232,7 +232,22 @@ int main() {
             while (state.actionCount && size < TEST_DEPTH) {
                 states[size] = state;
                 actions[size] = state.actions[rand() % state.actionCount];
+
+                enum Player afterActionTurn =
+                    Action_changesTurn(&actions[size], &state) ?
+                    !state.turn : state.turn;
+
                 State_act(&state, &actions[size++]);
+
+                if (state.turn != afterActionTurn) {
+                    printf("Action_changesTurn gives incorrect results\n");
+                    char actionString[ACTION_STRING_SIZE];
+                    Action_toString(&actions[size-1], actionString);
+                    printf("%s\n", actionString);
+                    printf("state after action:\n");
+                    State_printDetail(&state);
+                    return 6;
+                }
 
                 // Check for correctness in captured fields
                 for (int sq = 0; sq < NUM_SQUARES; sq++) {
