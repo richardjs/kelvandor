@@ -200,7 +200,19 @@ void mcts(const struct State *state, struct Node *root) {
     fprintf(stderr, "Monte Carlo tree search\n");
 
     if (state->actionCount == 0) {
-        fprintf(stderr, "No actions\n");
+        fprintf(stderr, "No actions from state\n");
+        return;
+    }
+
+    if (state->actionCount == 1) {
+        char actionString[ACTION_STRING_SIZE];
+        Action_toString(&state->actions[0], actionString);
+        fprintf(stderr, "Only a single action from state: %s\n\n", actionString);
+        printf("%s\n", actionString);
+
+        // There shouldn't be a case where a single action keeps it our
+        // turn, so we don't need to recurse for MULTIACTION. The only
+        // time we should have a single action is a solitary END.
         return;
     }
 
@@ -273,8 +285,8 @@ void mcts(const struct State *state, struct Node *root) {
     char stateString[STATE_STRING_SIZE];
     State_toString(state, stateString);
     fprintf(stderr, "%s\n", stateString);
-
     fprintf(stderr, "\n");
+
     fprintf(stderr, "action:\t\t%s\n", actionString);
     fprintf(stderr, "value:\t\t%f\n", bestScore);
     fprintf(stderr, "visits:\t\t%d\n", bestChild->visits);
@@ -296,6 +308,7 @@ void mcts(const struct State *state, struct Node *root) {
     State_print(&afterState);
     State_toString(&afterState, stateString);
     fprintf(stderr, "%s\n", stateString);
+    fprintf(stderr, "\n");
 
     #ifdef KELV_LOGACTIONVALUES
     fprintf(stderr, "action values:\n");
