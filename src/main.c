@@ -5,6 +5,7 @@
 #include "state.h"
 
 #include <stdio.h>
+#include <sys/time.h>
 
 
 int main(int argc, char *argv[]) {
@@ -26,7 +27,15 @@ int main(int argc, char *argv[]) {
     struct State state;
     State_fromString(&state, argv[1]);
 
+    struct timeval start;
+    gettimeofday(&start, NULL);
+
     mcts(&state, NULL);
+
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
+    fprintf(stderr, "total time:\t%d ms\n", duration);
 
     return 0;
 }
