@@ -94,17 +94,13 @@ float simulate(struct State *state) {
 
 
 float iterate(struct Node *root, struct State *state) {
-    if (!root->expanded) {
-        Node_expand(root, state);
-    }
-
     if (state->actionCount == 0) {
         // TODO we use this branch a couple times; probably should be a function
         float score;
         if (state->score[state->turn] >= WIN_SCORE) {
-            score = INFINITY;
+            score = 1.0;
         } else if (state->score[!state->turn] >= WIN_SCORE) {
-            score = -INFINITY;
+            score = -1.0;
         } else {
             score = 0.0;
         }
@@ -113,6 +109,11 @@ float iterate(struct Node *root, struct State *state) {
         root->value += score;
         return score;
     }
+
+    if (!root->expanded) {
+        Node_expand(root, state);
+    }
+
 
     if (root->visits == 0) {
         float score = simulate(state);
@@ -188,6 +189,11 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, const struct State *sta
 
 void mcts(const struct State *state, struct Node *root) {
     fprintf(stderr, "Monte Carlo tree search\n");
+
+    if (state->actionCount == 0) {
+        fprintf(stderr, "No actions\n");
+        return;
+    }
 
     bool ownRoot = root == NULL;
     if (root == NULL) {
