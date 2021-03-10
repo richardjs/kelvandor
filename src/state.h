@@ -92,6 +92,8 @@ void State_randomStart(struct State *state);
 
 /* Core operations */
 
+bool Action_changesTurn(const struct Action *action, const struct State* state);
+
 //struct Action *State_actions(const struct State *state);
 void State_act(struct State *state, const struct Action *action);
 

@@ -5,6 +5,21 @@
 #include <string.h>
 
 
+bool Action_changesTurn(const struct Action *action, const struct State* state) {
+    if (action->type == END) {
+        return true;
+    } else if (action->type == START_PLACE) {
+        if (state->turn == PLAYER_1) {
+            return true;
+        }
+        if (popcount(state->nodes[PLAYER_2]) == (START_NODES - 1)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 int State_largestNetworkSize(const struct State *state, enum Player player) {
     uint64_t networks[NUM_SQUARES] = {0llu};
     uint64_t networkAdjacents[NUM_SQUARES] = {0llu};
