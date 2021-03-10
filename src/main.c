@@ -6,10 +6,17 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 
 int main(int argc, char *argv[]) {
     fprintf(stderr, "Kelvandor v.1a (built %s %s)\n", __DATE__, __TIME__);
+
+    char hostname[1024];
+    hostname[1023] = '\0';
+    gethostname(hostname, 1023);
+    fprintf(stderr, "Host: %s\n", hostname);
+
 
     srand(time(NULL));
 

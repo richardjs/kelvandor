@@ -1,4 +1,4 @@
-CFLAGS=-std=c99 -Wall -O3 -lm
+CFLAGS=-std=c99 -Wall -O3 -lm -D_XOPEN_SOURCE=500
 
 
 objects=state.o stateio.o layout.o mcts.o random.o
