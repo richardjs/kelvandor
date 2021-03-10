@@ -286,7 +286,7 @@ void mcts(const struct State *state, struct Node *root) {
     fprintf(stderr, "tree size:\t%lld MiB\n", stats.treeBytes / 1024 / 1024);
     fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
     fprintf(stderr, "simulations:\t%d\n", stats.simulations);
-    fprintf(stderr, "depth out pct:\t%f%%\n", (float)stats.depthOuts/stats.simulations);
+    fprintf(stderr, "depth out pct:\t%f%%\n", 100*(float)stats.depthOuts/stats.simulations);
     fprintf(stderr, "\n");
 
     struct State afterState = *state;
