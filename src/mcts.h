@@ -17,10 +17,12 @@ struct Node {
 
     struct Node **children;
     uint_fast8_t childrenCount;
+
+    uint8_t depth;
 };
 
 
-void Node_init(struct Node *node);
+void Node_init(struct Node *node, uint8_t depth);
 
 
 // root should be NULL for fresh calls; it is there to reuse existing

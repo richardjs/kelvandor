@@ -17,12 +17,18 @@ struct Stats {
 struct Stats stats;
 
 
-void Node_init(struct Node *node) {
+void Node_init(struct Node *node, uint8_t depth) {
     node->expanded = false;
     node->visits = 0;
     node->value = 0;
+    // TODO we probably could pass this around mcts() and iterate()
+    // instead of storing it here
+    node->depth = depth;
 
     stats.nodes++;
+    if (depth > stats.maxTreeDepth) {
+        stats.maxTreeDepth = depth;
+    }
 }
 
 
@@ -42,7 +48,7 @@ void Node_expand(struct Node *node, const struct State *state) {
             exit(3);
         }
         stats.treeBytes += sizeof(struct Node);
-        Node_init(node->children[i]);
+        Node_init(node->children[i], node->depth+1);
     }
     node->expanded = true;
 }
@@ -87,11 +93,7 @@ float simulate(struct State *state) {
 }
 
 
-float iterate(struct Node *root, struct State *state, unsigned int depth) {
-    if (depth > stats.maxTreeDepth) {
-        stats.maxTreeDepth = depth;
-    }
-
+float iterate(struct Node *root, struct State *state) {
     if (!root->expanded) {
         Node_expand(root, state);
     }
@@ -141,7 +143,7 @@ float iterate(struct Node *root, struct State *state, unsigned int depth) {
     if (state->turn != turn) {
         scoreSign = -1;
     }
-    float score = scoreSign * iterate(child, state, depth+1);
+    float score = scoreSign * iterate(child, state);
 
     root->visits++;
     root->value += score;
@@ -199,7 +201,7 @@ void mcts(const struct State *state, struct Node *root) {
             exit(4);
         }
         stats.treeBytes += sizeof(struct Node);
-        Node_init(root);
+        Node_init(root, 0);
     } else {
         fprintf(stderr, "Using existing tree\n");
     }
@@ -209,7 +211,7 @@ void mcts(const struct State *state, struct Node *root) {
 
     for (int i = 0; i < ITERATIONS; i++) {
         struct State s = *state;
-        iterate(root, &s, 0);
+        iterate(root, &s);
 
         if (i % (ITERATIONS/10) == 0) {
             fprintf(stderr, ".");
