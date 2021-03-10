@@ -5,7 +5,7 @@
 #include "state.h"
 
 
-#define ITERATIONS 100000
+#define ITERATIONS 150000
 #define MAX_SIM_DEPTH 500
 #define UCTC 2
 #define MULTIACTION true
