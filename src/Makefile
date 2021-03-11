@@ -1,4 +1,5 @@
-CFLAGS=-std=c99 -Wall -O3 -lm -D_XOPEN_SOURCE=500
+CFLAGS=-std=c99 -Wall -O3 -D_XOPEN_SOURCE=500
+LDFLAGS=-lm
 
 
 objects=state.o stateio.o layout.o mcts.o
