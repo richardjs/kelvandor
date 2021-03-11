@@ -81,7 +81,13 @@ var defaultTileVals = [
 
 export const DEFAULT_BOARD_STATE = 'R2G1B2R3G2Y2V0G3Y1B3R1B1Y3222222222222222222222222222222222222222222222222222222222222000000000000000000';
 export class Board {
-	_constructor = () => {
+
+
+	constructor() {
+		this.init();
+	}
+	
+	init = () => {
 		this.turn = constants.SIDE_1;
 		this.phase = constants.PHASE_PLACE1_1;// PHASE_PLAY;		
 		this.tiles = [];
@@ -91,12 +97,8 @@ export class Board {
 		this.res = [[4,4,2,2],[4,4,2,2]]; 
 		this.hasAlreadyTraded = false;		
 	}
-
-	constructor() {
-		this._constructor();
-	}
 	
-	init = () => {				
+	defaultSetup = () => {				
 		for (var r = 0; r < WIDTH_GRID; r++) {
 			for (var c = 0; c < WIDTH_GRID; c++) {
 				var item = grid[r][c];
@@ -126,8 +128,8 @@ export class Board {
 	reset = () => {
 		var tiles = this.tiles;
 
-		this._constructor()
 		this.init();
+		this.defaultSetup();
 
 		this.tiles = tiles;
 

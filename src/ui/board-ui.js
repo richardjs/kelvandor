@@ -27,7 +27,7 @@ export class BoardUI extends Component {
 		
 		//this.board = Board.fromString(DEFAULT_BOARD_STATE);
 		this.board = new Board();
-		this.board.init();
+		this.board.defaultSetup();
 		
 		//let state = new kelvandor.State();
 		//console.log(state.toString());						
