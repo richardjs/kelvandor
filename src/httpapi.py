@@ -19,9 +19,14 @@ def think(board):
     for action in p.stdout.readlines():
         actions.append(action.strip().decode('utf-8'))
 
+    log = p.stderr.read().decode('utf-8')
+
+    with open('httpapi.log', 'a') as f:
+        f.write(log)
+
     response = jsonify({
         'actions': actions,
-        'log': p.stderr.read().decode('utf-8'),
+        'log': log,
     })
 
     response.headers.add("Access-Control-Allow-Origin", "*")
