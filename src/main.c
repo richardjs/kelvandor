@@ -10,7 +10,7 @@
 
 
 int main(int argc, char *argv[]) {
-    fprintf(stderr, "Kelvandor v0.1b (built %s %s)\n", __DATE__, __TIME__);
+    fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
 
     char hostname[1024];
     hostname[1023] = '\0';
