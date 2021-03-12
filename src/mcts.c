@@ -65,8 +65,8 @@ void Node_init(struct Node *node, uint8_t depth)
     node->depth = depth;
 
     results->stats.nodes++;
-    if (depth > results->stats.maxTreeDepth) {
-        results->stats.maxTreeDepth = depth;
+    if (depth > results->stats.treeDepth) {
+        results->stats.treeDepth = depth;
     }
 }
 
@@ -286,35 +286,21 @@ int mctsAction(const struct State *state, struct Node *root)
     results->actionStats[results->actionCount].duration = duration;
 
     return bestActionIndex;
-/*
-    fprintf(stderr, "actions:\t%d\n", state->actionCount);
-    fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
-    fprintf(stderr, "tree size:\t%lld MiB\n", stats.treeBytes / 1024 / 1024);
-    fprintf(stderr, "max tree depth:\t%d\n", stats.maxTreeDepth);
-    fprintf(stderr, "simulations:\t%d\n", stats.simulations);
-    fprintf(stderr, "depth out pct:\t%f%%\n", 100*(float)stats.depthOuts/stats.simulations);
-    fprintf(stderr, "\n");
-
-    fprintf(stderr, "Output state:\n");
-    State_print(&afterState);
-    State_toString(&afterState, stateString);
-    fprintf(stderr, "%s\n", stateString);
-    fprintf(stderr, "\n");
-*/
 }
 
 
 struct Node* mctsAct(struct State *state, const struct Node *node,
         int actionIndex)
 {
-    results->actions[results->actionCount] = state->actions[actionIndex];
-    State_act(state, &state->actions[actionIndex]);
-
-    struct MCTSActionStats *stats = &results->actionStats[results->actionCount++];
+    struct MCTSActionStats *stats = &results->actionStats[results->actionCount];
     struct Node *child = node->children[actionIndex];
     int valueSign = Action_changesTurn(&state->actions[actionIndex], state) ? -1 : 1;
+    stats->actionCount = state->actionCount;
     stats->value = valueSign*child->value;
     stats->visits = child->visits;
+
+    results->actions[results->actionCount++] = state->actions[actionIndex];
+    State_act(state, &state->actions[actionIndex]);
 
     return node->children[actionIndex];
 }
@@ -360,9 +346,12 @@ void mcts(const struct State *s, struct MCTSResults *r, const struct MCTSOptions
     gettimeofday(&end, NULL);
     results->stats.duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
 
+    results->state = state;
+
     if (options.saveTree) {
         results->tree = root;
     } else {
         Node_free(root);
+        results->tree = NULL;
     }
 }

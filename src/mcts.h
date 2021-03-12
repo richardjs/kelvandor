@@ -18,7 +18,7 @@ struct MCTSStats {
     uint64_t iterations;
     uint64_t nodes;
     uint64_t treeBytes;
-    uint8_t maxTreeDepth;
+    uint8_t treeDepth;
     uint32_t simulations;
     uint32_t depthOuts;
     uint64_t duration;
@@ -27,6 +27,7 @@ struct MCTSStats {
 
 struct MCTSActionStats {
     uint64_t iterations;
+    uint8_t actionCount;
     float value;
     uint64_t visits;
     uint64_t duration;
@@ -39,6 +40,8 @@ struct MCTSResults {
 
     struct MCTSStats stats;
     struct MCTSActionStats actionStats[MAX_TURN_ACTIONS];
+
+    struct State state;
 
     struct Node *tree;
 };

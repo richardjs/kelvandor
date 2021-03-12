@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Input state:\n");
     State_print(&state);
+    fprintf(stderr, "\n");
 
     if (state.actionCount == 0) {
         fprintf(stderr, "No actions from state\n");
@@ -51,19 +52,36 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "iterations:\t%ld\n", results.stats.iterations);
     fprintf(stderr, "iters/s:\t%ld\n",
         1000 * results.stats.iterations / results.stats.duration);
+    fprintf(stderr, "sim depth out:\t%.4f%%\n",
+        100 * (float)results.stats.depthOuts / results.stats.simulations);
+    fprintf(stderr, "tree depth:\t%d\n", results.stats.treeDepth);
+    fprintf(stderr, "tree size:\t%ld MiB\n",
+        results.stats.treeBytes / 1024 / 1024);
 
-    fprintf(stderr, "action\tvalue\tvisits\titers\n");
+    fprintf(stderr, "action\tvalue\tvisits\tbranch\ttime\titers\titers/s\n");
     for (int i = 0; i < results.actionCount; i++) {
         char actionString[ACTION_STRING_SIZE];
         Action_toString(&results.actions[i], actionString);
         printf("%s\n", actionString);
 
-        fprintf(stderr, "%s\t%.3f\t%ld\t%ld\n",
+        fprintf(stderr, "%s\t%.3f\t%ld\t%d\t%ld\t%ld\t%ld\n",
             actionString,
             results.actionStats[i].value / results.actionStats[i].visits,
             results.actionStats[i].visits,
-            results.actionStats[i].iterations);
+            results.actionStats[i].actionCount,
+            results.actionStats[i].duration,
+            results.actionStats[i].iterations,
+            results.actionStats[i].duration ?
+                1000 * results.actionStats[i].iterations
+                / results.actionStats[i].duration : 0);
     }
+
+    fprintf(stderr, "\n");
+    fprintf(stderr, "State after actions:\n");
+    State_print(&results.state);
+    char stateString[STATE_STRING_SIZE];
+    State_toString(&state, stateString);
+    fprintf(stderr, "%s\n", stateString);
 
     return 0;
 }
