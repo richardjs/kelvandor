@@ -9,7 +9,18 @@
 #include <unistd.h>
 
 
-int main(int argc, char *argv[]) {
+void printUsage(char name[])
+{
+    fprintf(stderr, "Usage: %s [options] serialized board\n\
+Options:\n\
+    -i iterations\tnumber of MCTS iterations per action\n\
+    -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
+    -s\t\t\tsingle action mode\n", name);
+}
+
+
+int main(int argc, char *argv[])
+{
     fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
 
     char hostname[1024];
@@ -17,21 +28,40 @@ int main(int argc, char *argv[]) {
     gethostname(hostname, 1023);
     fprintf(stderr, "Host: %s\n", hostname);
 
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <serialized board>\n", argv[0]);
+    struct MCTSOptions options;
+    MCTSOptions_default(&options);
+    int opt;
+    while ((opt = getopt(argc, argv, "i:c:s")) != -1) {
+        switch (opt) {
+            case 'i':
+                options.iterations = atoi(optarg);
+                break;
+            case 'c':
+                options.uctc = atof(optarg);
+                break;
+            case 's':
+                options.multiaction = false;
+                break;
+            default:
+                printUsage(argv[0]);
+                return 1;
+        }
+    }
+    if (argc == optind) {
+        printUsage(argv[0]);
         return 1;
     }
 
-    fprintf(stderr, "Input: %s\n", argv[1]);
-    if (!validStateString(argv[1])) {
-        fprintf(stderr, "Invalid state string: %s\n", argv[1]);
+    fprintf(stderr, "Input: %s\n", argv[optind]);
+    if (!validStateString(argv[optind])) {
+        fprintf(stderr, "Invalid state string: %s\n", argv[optind]);
         return 2;
     }
 
     srand(time(NULL));
 
     struct State state;
-    State_fromString(&state, argv[1]);
+    State_fromString(&state, argv[optind]);
 
     fprintf(stderr, "Input state:\n");
     State_print(&state);
@@ -43,8 +73,6 @@ int main(int argc, char *argv[]) {
     }
 
     struct MCTSResults results;
-    struct MCTSOptions options;
-    MCTSOptions_default(&options);
     mcts(&state, &results, &options);
 
     fprintf(stderr, "time:\t\t%ld ms\n", results.stats.duration);
@@ -56,6 +84,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "tree depth:\t%d\n", results.stats.treeDepth);
     fprintf(stderr, "tree size:\t%ld MiB\n",
         results.stats.treeBytes / 1024 / 1024);
+    fprintf(stderr, "UCTC:\t\t%g\n", options.uctc);
 
     fprintf(stderr, "action\tvalue\tvisits\tbranch\ttime\titers\titers/s\n");
     for (int i = 0; i < results.actionCount; i++) {
