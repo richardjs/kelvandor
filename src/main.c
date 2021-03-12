@@ -78,9 +78,11 @@ int main(int argc, char *argv[])
     fprintf(stderr, "time:\t\t%ld ms\n", results.stats.duration);
     fprintf(stderr, "iterations:\t%ld\n", results.stats.iterations);
     fprintf(stderr, "iters/s:\t%ld\n",
-        1000 * results.stats.iterations / results.stats.duration);
-    fprintf(stderr, "sim depth out:\t%.4f%%\n",
-        100 * (float)results.stats.depthOuts / results.stats.simulations);
+        results.stats.duration ?
+            1000 * results.stats.iterations / results.stats.duration : 0);
+    fprintf(stderr, "sim depth out:\t%.4g%%\n",
+        results.stats.simulations ?
+            100 * (float)results.stats.depthOuts / results.stats.simulations : 0);
     fprintf(stderr, "tree depth:\t%d\n", results.stats.treeDepth);
     fprintf(stderr, "tree size:\t%ld MiB\n",
         results.stats.treeBytes / 1024 / 1024);
@@ -92,9 +94,10 @@ int main(int argc, char *argv[])
         Action_toString(&results.actions[i], actionString);
         printf("%s\n", actionString);
 
-        fprintf(stderr, "%s\t%.3f\t%ld\t%d\t%ld\t%ld\t%ld\n",
+        fprintf(stderr, "%s\t%.3g\t%ld\t%d\t%ld\t%ld\t%ld\n",
             actionString,
-            results.actionStats[i].value / results.actionStats[i].visits,
+            results.actionStats[i].visits ?
+                results.actionStats[i].value / results.actionStats[i].visits : 0,
             results.actionStats[i].visits,
             results.actionStats[i].actionCount,
             results.actionStats[i].duration,

@@ -325,6 +325,7 @@ void mcts(const struct State *s, struct MCTSResults *r, const struct MCTSOptions
 
     struct Node *root = mctsmalloc(sizeof(struct Node));
     Node_init(root, 0);
+    Node_expand(root, &state);
 
     struct timeval start;
     gettimeofday(&start, NULL);
