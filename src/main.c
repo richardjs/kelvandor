@@ -17,9 +17,6 @@ int main(int argc, char *argv[]) {
     gethostname(hostname, 1023);
     fprintf(stderr, "Host: %s\n", hostname);
 
-
-    srand(time(NULL));
-
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <serialized board>\n", argv[0]);
         return 1;
@@ -30,6 +27,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Invalid state string: %s\n", argv[1]);
         return 2;
     }
+
+    srand(time(NULL));
 
     struct State state;
     State_fromString(&state, argv[1]);
