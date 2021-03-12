@@ -5,30 +5,49 @@
 #include "state.h"
 
 
-#define ITERATIONS 150000
-#define MAX_SIM_DEPTH 500
-#define UCTC 2
-#define MULTIACTION true
-
-
-struct Node {
-    bool expanded;
-    unsigned int visits;
-    float value;
-
-    struct Node **children;
-    uint_fast8_t childrenCount;
-
-    uint8_t depth;
+struct MCTSOptions {
+    uint64_t iterations;
+    float uctc;
+    uint16_t maxSimDepth;
+    bool multiaction;
+    bool saveTree;
 };
 
 
-void Node_init(struct Node *node, uint8_t depth);
+struct MCTSStats {
+    uint64_t iterations;
+    uint64_t nodes;
+    uint64_t treeBytes;
+    uint8_t maxTreeDepth;
+    uint32_t simulations;
+    uint32_t depthOuts;
+    uint64_t duration;
+};
 
 
-// root should be NULL for fresh calls; it is there to reuse existing
-// search information from previous calls
-void mcts(const struct State *state, struct Node *root);
+struct MCTSActionStats {
+    uint64_t iterations;
+    float value;
+    uint64_t visits;
+    uint64_t duration;
+};
+
+
+struct MCTSResults {
+    struct Action actions[MAX_TURN_ACTIONS];
+    uint8_t actionCount;
+
+    struct MCTSStats stats;
+    struct MCTSActionStats actionStats[MAX_TURN_ACTIONS];
+
+    struct Node *tree;
+};
+
+
+void MCTSOptions_default(struct MCTSOptions *options);
+
+
+void mcts(const struct State *s, struct MCTSResults *r, const struct MCTSOptions *options);
 
 
 #endif

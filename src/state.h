@@ -31,6 +31,7 @@
 #define WIN_SCORE 10
 #define STATE_STRING_SIZE 105
 #define ACTION_STRING_SIZE 6
+#define MAX_TURN_ACTIONS (1 + NUM_CORNERS + NUM_EDGES + 1)
 
 
 enum Player {PLAYER_1=0, PLAYER_2, PLAYER_NONE};
@@ -96,6 +97,8 @@ bool Action_changesTurn(const struct Action *action, const struct State* state);
 
 //struct Action *State_actions(const struct State *state);
 void State_act(struct State *state, const struct Action *action);
+
+bool State_currentPlayerWon(const struct State *state);
 
 
 /* Interface */

@@ -466,6 +466,12 @@ void State_act(struct State *state, const struct Action *action) {
 }
 
 
+// TODO put this in a state->winner?
+bool State_currentPlayerWon(const struct State *state) {
+    return state->score[state->turn] >= WIN_SCORE;
+}
+
+
 void State_randomStart(struct State *state) {
     // Most fields start off at 0
     memset(state, 0, sizeof(struct State));

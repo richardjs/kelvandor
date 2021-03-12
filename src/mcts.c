@@ -7,17 +7,56 @@
 #include <sys/time.h>
 
 
-struct Stats {
-    unsigned int nodes;
-    unsigned long long treeBytes;
-    unsigned int maxTreeDepth;
-    unsigned int simulations;
-    unsigned int depthOuts;
+#define DEFAULT_ITERATIONS 150000
+#define DEFAULT_MAX_SIM_DEPTH 500
+#define DEFAULT_UCTC 2
+#define DEFAULT_MULTIACTION true
+#define DEFAULT_SAVE_TREE false
+
+
+struct MCTSOptions options;
+struct MCTSResults *results;
+
+
+struct Node {
+    bool expanded;
+    unsigned int visits;
+    float value;
+
+    struct Node **children;
+    uint_fast8_t childrenCount;
+
+    uint8_t depth;
 };
-struct Stats stats;
 
 
-void Node_init(struct Node *node, uint8_t depth) {
+/**
+ * mallocs, checks for null, and increases results.stats.treeBytes
+ */
+void *mctsmalloc(size_t size)
+{
+    void *ptr = malloc(size);
+    if (ptr == NULL) {
+        fprintf(stderr, "ERROR: failure to malloc in MCTS\n");
+        exit(1);
+    }
+    results->stats.treeBytes += size;
+    return ptr;
+}
+
+
+void MCTSOptions_default(struct MCTSOptions *o)
+{
+        o->iterations = DEFAULT_ITERATIONS;
+        o->uctc = DEFAULT_UCTC;
+        o->maxSimDepth = DEFAULT_MAX_SIM_DEPTH;
+        o->multiaction = DEFAULT_MULTIACTION;
+        o->saveTree = DEFAULT_SAVE_TREE;
+}
+
+
+void Node_init(struct Node *node, uint8_t depth)
+{
     node->expanded = false;
     node->visits = 0;
     node->value = 0;
@@ -25,143 +64,50 @@ void Node_init(struct Node *node, uint8_t depth) {
     // instead of storing it here
     node->depth = depth;
 
-    stats.nodes++;
-    if (depth > stats.maxTreeDepth) {
-        stats.maxTreeDepth = depth;
+    results->stats.nodes++;
+    if (depth > results->stats.maxTreeDepth) {
+        results->stats.maxTreeDepth = depth;
     }
 }
 
-// Node_expand dose the following:
-// -    allocates space for children pointers
-// -    allocates space for each child
-// -    calls Node_init on each child node
-// -    sets node.expanded = true
-void Node_expand(struct Node *node, const struct State *state) {
+
+/**
+ * allocates space for children pointers and the child nodes themselves,
+ * and calls Node_init on each child
+ */
+void Node_expand(struct Node *node, const struct State *state)
+{
     node->childrenCount = state->actionCount;
-    node->children = malloc(sizeof(struct Node*) * node->childrenCount);
-    if (node->children == NULL) {
-        fprintf(stderr, "malloc failed in Node_expand\n");
-        exit(6);
-    }
-    stats.treeBytes += sizeof(struct Node*) * node->childrenCount;
+    node->children = mctsmalloc(sizeof(struct Node*) * node->childrenCount);
 
     for (int i = 0; i < state->actionCount; i++) {
-        node->children[i] = malloc(sizeof(struct Node));
-        if (node->children[i] == NULL) {
-            fprintf(stderr, "malloc failed in Node_expand\n");
-            exit(3);
-        }
-        stats.treeBytes += sizeof(struct Node);
+        node->children[i] = mctsmalloc(sizeof(struct Node));
         Node_init(node->children[i], node->depth+1);
     }
+
     node->expanded = true;
 }
 
 
-void Node_free(struct Node *node) {
+/**
+ * frees the node's children along with the node
+ */
+void Node_free(struct Node *node)
+{
     if (node->expanded) {
         for (int i = 0; i < node->childrenCount; i++) {
             Node_free(node->children[i]);
         }
+        free(node->children);
     }
-    free(node->children);
+
     free(node);
 }
 
 
-float simulate(struct State *state) {
-    stats.simulations++;
-    enum Player turn = state->turn;
-
-    int depth = 0;
-    while (state->actionCount) {
-        // TODO We might be able to avoid this if we keep track of
-        // stuck states, such as where every square with a node is
-        // exhausted
-        if (depth++ > MAX_SIM_DEPTH) {
-            stats.depthOuts++;
-            return 0.0;
-        }
-
-        struct Action action = state->actions[rand() % state->actionCount];
-        State_act(state, &action);
-    }
-
-    if (state->score[turn] >= WIN_SCORE) {
-        return 1.0;
-    } else if (state->score[!turn] >= WIN_SCORE) {
-        return -1.0;
-    } else {
-        return 0.0;
-    }
-}
-
-
-float iterate(struct Node *root, struct State *state) {
-    // If we're at a terminal node
-    if (state->actionCount == 0) {
-        // TODO we use this branch a couple times; probably should be a function
-        float score;
-        if (state->score[state->turn] >= WIN_SCORE) {
-            score = 1.0;
-        } else if (state->score[!state->turn] >= WIN_SCORE) {
-            score = -1.0;
-        } else {
-            score = 0.0;
-        }
-
-        root->visits++;
-        root->value += score;
-        return score;
-    }
-
-    if (!root->expanded) {
-        Node_expand(root, state);
-    }
-
-    if (root->visits == 0) {
-        float score = simulate(state);
-
-        root->visits++;
-        root->value += score;
-        return score;
-    }
-
-    int childIndex = 0;
-    float bestUCT = -INFINITY;
-    for (int i = 0; i < state->actionCount; i++) {
-        if (root->children[i]->visits == 0) {
-            childIndex = i;
-            break;
-        }
-
-        int scoreSign = Action_changesTurn(&state->actions[i], state) ? -1 : 1;
-        float uct = scoreSign*root->children[i]->value/root->children[i]->visits + UCTC*sqrtf(logf(root->visits)/root->children[i]->visits);
-
-        if (uct >= bestUCT) {
-            bestUCT = uct;
-            childIndex = i;
-        }
-    }
-
-    enum Player turn = state->turn;
-
-    struct Node *child = root->children[childIndex];
-    State_act(state, &state->actions[childIndex]);
-
-    float scoreSign = 1;
-    if (state->turn != turn) {
-        scoreSign = -1;
-    }
-    float score = scoreSign * iterate(child, state);
-
-    root->visits++;
-    root->value += score;
-    return score;
-}
-
-
-unsigned int dumpTree(FILE *fp, const struct Node *root, const struct State *state, unsigned int id) {
+unsigned int dumpTree(FILE *fp, const struct Node *root,
+        const struct State *state, unsigned int id)
+{
     int rootID = id++;
     int childIDs[MAX_ACTIONS];
 
@@ -196,103 +142,151 @@ unsigned int dumpTree(FILE *fp, const struct Node *root, const struct State *sta
 }
 
 
-void mcts(const struct State *state, struct Node *root) {
-    fprintf(stderr, "Monte Carlo tree search\n");
+/**
+ * simulates play (in place) on a state, stopping at game end or
+ * MAX_SIM_DEPTH, and returns 1.0 if the initial state won, -1.0 if it
+ * lost, and 0.0 on a draw or depth out
+ */
+float simulate(struct State *state)
+{
+    results->stats.simulations++;
+    enum Player turn = state->turn;
 
-    if (state->actionCount == 0) {
-        fprintf(stderr, "No actions from state\n");
-        return;
-    }
-
-    if (state->actionCount == 1) {
-        char actionString[ACTION_STRING_SIZE];
-        Action_toString(&state->actions[0], actionString);
-        fprintf(stderr, "Only a single action from state: %s\n\n", actionString);
-        printf("%s\n", actionString);
-
-        // There shouldn't be a case where a single action keeps it our
-        // turn, so we don't need to recurse for MULTIACTION. The only
-        // time we should have a single action is a solitary END.
-        return;
-    }
-
-    bool ownRoot = root == NULL;
-    if (root == NULL) {
-        fprintf(stderr, "Creating new tree\n");
-
-        memset(&stats, 0, sizeof(struct Stats));
-
-        root = malloc(sizeof(struct Node));
-        if (root == NULL) {
-            fprintf(stderr, "root malloc failed in mcts\n");
-            exit(4);
+    int depth = 0;
+    while (state->actionCount) {
+        // TODO We might be able to avoid this if we keep track of
+        // stuck states, such as where every square with a node is
+        // exhausted
+        if (depth++ > options.maxSimDepth) {
+            results->stats.depthOuts++;
+            return 0.0;
         }
-        stats.treeBytes += sizeof(struct Node);
-        Node_init(root, 0);
-    } else {
-        fprintf(stderr, "Using existing tree\n");
+
+        struct Action action = state->actions[rand() % state->actionCount];
+        State_act(state, &action);
     }
 
+    if (state->score[turn] >= WIN_SCORE) {
+        return 1.0;
+    } else if (state->score[!turn] >= WIN_SCORE) {
+        return -1.0;
+    } else {
+        return 0.0;
+    }
+}
+
+
+/**
+ * single MCTS iteration: recursively walk down tree with state
+ * (choosing promising children), simulate when we get to the end of the
+ * tree, and update visited nodes with the results
+ */
+float iterate(struct Node *root, struct State *state)
+{
+    // game-terminal node
+    if (state->actionCount == 0) {
+        float score;
+        // a winner can only be the current player
+        if (State_currentPlayerWon(state)) {
+            score = 1.0;
+        } else {
+            score = 0.0;
+        }
+
+        root->visits++;
+        root->value += score;
+        return score;
+    }
+
+    if (!root->expanded) {
+        Node_expand(root, state);
+    }
+
+    if (root->visits == 0) {
+        float score = simulate(state);
+
+        root->visits++;
+        root->value += score;
+        return score;
+    }
+
+    int childIndex = 0;
+    float bestUCT = -INFINITY;
+    for (int i = 0; i < state->actionCount; i++) {
+        if (root->children[i]->visits == 0) {
+            childIndex = i;
+            break;
+        }
+
+        int scoreSign = Action_changesTurn(&state->actions[i], state) ? -1 : 1;
+        float uct =
+            scoreSign*root->children[i]->value/root->children[i]->visits
+            + options.uctc*sqrtf(logf(root->visits)/root->children[i]->visits);
+
+        if (uct >= bestUCT) {
+            bestUCT = uct;
+            childIndex = i;
+        }
+    }
+
+    enum Player turn = state->turn;
+
+    struct Node *child = root->children[childIndex];
+    State_act(state, &state->actions[childIndex]);
+
+    float scoreSign = 1;
+    if (state->turn != turn) {
+        scoreSign = -1;
+    }
+    float score = scoreSign * iterate(child, state);
+
+    root->visits++;
+    root->value += score;
+    return score;
+}
+
+
+/**
+ * selects an action to play from state, using MCTS and the provided
+ * tree; returns the index of the action
+ */
+int mctsAction(const struct State *state, struct Node *root)
+{
     struct timeval start;
     gettimeofday(&start, NULL);
 
-    for (int i = 0; i < ITERATIONS; i++) {
+    for (int i = 0; i < options.iterations; i++) {
         struct State s = *state;
         iterate(root, &s);
 
-        if (i % (ITERATIONS/10) == 0) {
-            fprintf(stderr, ".");
-        }
+        results->stats.iterations++;
+        results->actionStats[results->actionCount].iterations++;
     }
-    fprintf(stderr, "\n");
-
-    struct timeval end;
-    gettimeofday(&end, NULL);
-    int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
 
     float bestScore = -INFINITY;
-    const struct Action *bestAction = NULL;
-    struct Node *bestChild = NULL;
-    int bestIndex = 0;
+    int bestActionIndex = 0;
     for (int i = 0; i < state->actionCount; i++) {
-        const struct Action *action = &state->actions[i];
-
-        float scoreSign = 1;
-        struct State s = *state;
-        State_act(&s, action);
-        if (state->turn != s.turn) {
-            scoreSign = -1;
-        }
+        int scoreSign = Action_changesTurn(&state->actions[i], state) ? -1 : 1;
         float score = scoreSign * root->children[i]->value / root->children[i]->visits;
 
         // The second conditional clause is there so we don't always
         // choose END if we're about to win and all actions are valued
         // the same
-        if (score >= bestScore && (bestAction == NULL || action->type != END)) {
+        if (score >= bestScore
+                && (score != bestScore || state->actions[i].type != END)) {
             bestScore = score;
-            bestAction = action;
-            bestChild = root->children[i];
-            bestIndex = i;
+            bestActionIndex = i;
         }
     }
 
-    char actionString[ACTION_STRING_SIZE];
-    Action_toString(bestAction, actionString);
-    printf("%s\n", actionString);
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
 
-    fprintf(stderr, "Input state:\n");
-    State_print(state);
-    char stateString[STATE_STRING_SIZE];
-    State_toString(state, stateString);
-    fprintf(stderr, "%s\n", stateString);
-    fprintf(stderr, "\n");
+    results->actionStats[results->actionCount].duration = duration;
 
-    fprintf(stderr, "action:\t\t%s\n", actionString);
-    fprintf(stderr, "value:\t\t%f\n", bestScore);
-    fprintf(stderr, "visits:\t\t%d\n", bestChild->visits);
-    fprintf(stderr, "iterations:\t%d\n", ITERATIONS);
-    fprintf(stderr, "time:\t\t%d ms\n", duration);
-    fprintf(stderr, "iter/s:\t\t%f\n", (float)ITERATIONS/duration*1000);
+    return bestActionIndex;
+/*
     fprintf(stderr, "actions:\t%d\n", state->actionCount);
     fprintf(stderr, "nodes:\t\t%d\n", stats.nodes);
     fprintf(stderr, "tree size:\t%lld MiB\n", stats.treeBytes / 1024 / 1024);
@@ -301,43 +295,74 @@ void mcts(const struct State *state, struct Node *root) {
     fprintf(stderr, "depth out pct:\t%f%%\n", 100*(float)stats.depthOuts/stats.simulations);
     fprintf(stderr, "\n");
 
-    struct State afterState = *state;
-    State_act(&afterState, bestAction);
-
     fprintf(stderr, "Output state:\n");
     State_print(&afterState);
     State_toString(&afterState, stateString);
     fprintf(stderr, "%s\n", stateString);
     fprintf(stderr, "\n");
+*/
+}
 
-    #ifdef KELV_LOGACTIONVALUES
-    fprintf(stderr, "action values:\n");
-    for (int i = 0; i < root->state.actionCount; i++) {
-        Action_toString(&root->state.actions[i], actionString);
-        fprintf(stderr, "%s\t%f\n", actionString,
-            root->children[i]->value / root->children[i]->visits);
-    }
-    #endif
 
-    #ifdef KELV_DUMPTREE
-    FILE* fp = fopen("tree.txt", "w");
-    if (!fp) {
-        fprintf(stderr, "WARNING: Couldn't dump tree to tree.txt\n");
+struct Node* mctsAct(struct State *state, const struct Node *node,
+        int actionIndex)
+{
+    results->actions[results->actionCount] = state->actions[actionIndex];
+    State_act(state, &state->actions[actionIndex]);
+
+    struct MCTSActionStats *stats = &results->actionStats[results->actionCount++];
+    struct Node *child = node->children[actionIndex];
+    int valueSign = Action_changesTurn(&state->actions[actionIndex], state) ? -1 : 1;
+    stats->value = valueSign*child->value;
+    stats->visits = child->visits;
+
+    return node->children[actionIndex];
+}
+
+
+void mcts(const struct State *s, struct MCTSResults *r, const struct MCTSOptions *o)
+{
+    struct State state = *s;
+
+    results = r;
+    memset(results, 0, sizeof(struct MCTSResults));
+
+    if (o == NULL) {
+        MCTSOptions_default(&options);
     } else {
-        fprintf(stderr, "Dumping tree to tree.txt...\n");
-        dumpTree(fp, root, state, 0);
-        fclose(fp);
-        fprintf(stderr, "Done\n");
-    }
-    #endif
-
-    if (state->turn == afterState.turn && MULTIACTION) {
-        struct Node* next = root->children[bestIndex];
-        // TODO Free up parts of the tree that we won't use after recursing
-        mcts(&afterState, next);
+        options = *o;
     }
 
-    if (ownRoot) {
+    if (state.actionCount == 0) {
+        return;
+    }
+
+    struct Node *root = mctsmalloc(sizeof(struct Node));
+    Node_init(root, 0);
+
+    struct timeval start;
+    gettimeofday(&start, NULL);
+
+    enum Player turn = state.turn;
+    struct Node *node = root;
+    do {
+        if (state.actionCount == 1) {
+            node = mctsAct(&state, node, 0);
+            continue;
+        }
+
+        int actionIndex = mctsAction(&state, node);
+        node = mctsAct(&state, node, actionIndex);
+    } while (options.multiaction
+        && state.turn == turn && state.actionCount > 0);
+
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    results->stats.duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
+
+    if (options.saveTree) {
+        results->tree = root;
+    } else {
         Node_free(root);
     }
 }

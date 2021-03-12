@@ -34,15 +34,36 @@ int main(int argc, char *argv[]) {
     struct State state;
     State_fromString(&state, argv[1]);
 
-    struct timeval start;
-    gettimeofday(&start, NULL);
+    fprintf(stderr, "Input state:\n");
+    State_print(&state);
 
-    mcts(&state, NULL);
+    if (state.actionCount == 0) {
+        fprintf(stderr, "No actions from state\n");
+        return 0;
+    }
 
-    struct timeval end;
-    gettimeofday(&end, NULL);
-    int duration = (end.tv_sec - start.tv_sec)*1000 + (end.tv_usec - start.tv_usec)/1000;
-    fprintf(stderr, "total time:\t%d ms\n", duration);
+    struct MCTSResults results;
+    struct MCTSOptions options;
+    MCTSOptions_default(&options);
+    mcts(&state, &results, &options);
+
+    fprintf(stderr, "time:\t\t%ld ms\n", results.stats.duration);
+    fprintf(stderr, "iterations:\t%ld\n", results.stats.iterations);
+    fprintf(stderr, "iters/s:\t%ld\n",
+        1000 * results.stats.iterations / results.stats.duration);
+
+    fprintf(stderr, "action\tvalue\tvisits\titers\n");
+    for (int i = 0; i < results.actionCount; i++) {
+        char actionString[ACTION_STRING_SIZE];
+        Action_toString(&results.actions[i], actionString);
+        printf("%s\n", actionString);
+
+        fprintf(stderr, "%s\t%.3f\t%ld\t%ld\n",
+            actionString,
+            results.actionStats[i].value / results.actionStats[i].visits,
+            results.actionStats[i].visits,
+            results.actionStats[i].iterations);
+    }
 
     return 0;
 }
