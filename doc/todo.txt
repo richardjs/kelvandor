@@ -1,15 +1,27 @@
-Required
-*Capture perimeter
-- shorter urls ()
- 
+Todo:
+-Capture perimeter
+- Undo/redo with ctrl+z, ctrl+y
+- Chain AI player calls
 
-Would be nice:
-- rename protocol to kelvandor
-- Player controls
-- Wasm player?
-- Remove board initializer code 
-- undo / redo
-- show opponent res
+UI:
+- shorter urls ()
+- Player selection controls
+- Settings
 - show score breakdowns
-- heuristic player
+- highlight longest road
+- show id's on hover
+- highlight tiles on harvest
+- favicon
+ 
+Cleanup / Refactor:
+- Remove board initializer code 
 - game events
+- linting
+- puppeteer testing
+- css / styles 
+
+Other:
+- Wasm player?
+- heuristic player
+- random player
+

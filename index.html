@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="css/main.css"/> -->
   <style>
 	.tile, .node, .road {
-		stroke: black;
+		stroke: #fff;
+		stroke-width: 0.2px;
 		z-index: 5;
 	}
 
@@ -29,19 +30,25 @@
 		fill:#bbbbbb;
 	}
 	
+	.last {
+		stroke: #eee;
+		stroke-width: 2px;
+	}
+
 	.label {
 		font-family: verdana;
 		font-size: 16pt;
 		pointer-events: none;
-		z-index: 10;
+		z-index: 10;	
 	}
+	
 
 	.label.small {		
 		font-size: 12pt;		
 	}
 	
 	.lblTrade {
-		fill: white;
+		fill: #efefef;
 		font-family: verdana;
 		font-size: 12pt;
 		font-weight: bold;
@@ -79,10 +86,20 @@
 		font-family: Arial, Helvetica, sans-serif;			
 		font-size: 12pt;
 	}
-  </style>
-  <script type="module" src="src/index.js"></script>    
-
+	#status {
+		position: absolute;		
+		top: 850px;
+		z-index: 20;
+	}
+  </style>  
 </head>
-<body>           
+<body>    
+  <div id="status"></div>
+  <script>
+	//Globals
+	var lblStatus = document.getElementById('status');
+
+  </script>
+  <script type="module" src="src/index.js"></script>           
 </body>
 </html>

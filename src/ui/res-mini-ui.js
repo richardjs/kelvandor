@@ -18,7 +18,7 @@ export class ResMiniUI extends Component {
 					height=${SIZE_RES}
 					fill=${color}					
 				/>
-				<text class="label small"
+				<text class="label small" fill="#efefef"
 					x=${x+2}
 					y=${y+20} 							
 				>${value}</text>

@@ -1,4 +1,4 @@
-import {ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL, SIDES_TO_PROTOCOL} from './constants.js';
+import {ORIENTATION_VERTICAL, ORIENTATION_HORIZONTAL, SIDES_TO_KBN} from './constants.js';
 
 const I = -1; //Invalid shorthand for instantiation
 const V = ORIENTATION_VERTICAL; //Vertical 
@@ -30,6 +30,6 @@ export class Road {
 	
 	
 	toString = () => {
-		return SIDES_TO_PROTOCOL[this.side];
+		return SIDES_TO_KBN[this.side];
 	}
 }

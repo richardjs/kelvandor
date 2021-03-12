@@ -21,13 +21,16 @@ export class BoardUI extends Component {
 	state = {msg:''}
 
 	constructor() {
-		super();
+		super();		
+		//lblStatus.innerHTML = 'test';
 		document.addEventListener('keydown', this.onKeyDown);
 		document.addEventListener('contextmenu', this.onRightClick);		    
 		
 		//this.board = Board.fromString(DEFAULT_BOARD_STATE);
 		this.board = new Board();
 		this.board.defaultSetup();
+		this.stateHistory = [this.board.toString()];
+		this.stateRedo = [];
 		
 		//let state = new kelvandor.State();
 		//console.log(state.toString());						
@@ -39,7 +42,9 @@ export class BoardUI extends Component {
 	onNodeClick = (nid) => {
 		var action = this.board.addNode(nid);		
 		if (action.status) {			
-			//window.location.hash = this.board.toString();			
+			var boardStr = this.board.toString();
+			window.location.hash = boardStr;
+			this.stateHistory.push(boardStr);
 		}
 		this.flashMsg(action.msg);	
 	}
@@ -47,15 +52,53 @@ export class BoardUI extends Component {
 	onRoadClick = (rid) => {
 		var action = this.board.addRoad(rid);
 		if (action.status) {			
-			//window.location.hash = this.board.toString();			
+			var boardStr = this.board.toString();
+			window.location.hash = boardStr;
+			this.stateHistory.push(boardStr);
 		}
 		this.flashMsg(action.msg);	
 	}
 	
-	onKeyDown = (e) => {
+	onKeyDown = (e) => {		
 		if (e.keyCode == KEY_ENTER) {
 			this.board.changeTurn();
+			this.forceUpdate();
 		}
+		
+		if (e.key == 'k' && !document.getElementById('btnPlayRandom').disabled) {
+			this.playRandom();
+		}
+
+		if (e.key == 's') {
+			this.onShuffle();
+			this.forceUpdate();
+		}
+
+	
+		if (e.key == 'ArrowLeft' || (e.key == 'z' && e.ctrlKey)) { //Undo
+			
+			if (this.stateHistory.length) {
+				var prev = this.stateHistory.pop();
+				this.stateRedo.push(prev);
+				
+				this.board = Board.fromString(prev);
+				this.forceUpdate();
+			}
+		}
+		else if (e.key == 'ArrowRight' || (e.key == 'y' && e.ctrlKey)) { //redo
+			if (this.stateRedo.length) {
+				var next = this.stateRedo.pop();
+				this.stateHistory.push(next);
+				this.board = Board.fromString(next);
+				this.forceUpdate();
+			}
+		}		
+
+		//Conflict with Red trade resource
+		//if (e.key == 'r') {
+		//	this.onReset();
+		//	this.forceUpdate();
+		//}
 
 	}
 	
@@ -75,12 +118,27 @@ export class BoardUI extends Component {
 		this.forceUpdate();
 	}
 
-	playRandom = (e) => {		
+	playRandom = (e) => {	
+		var btnDone = document.getElementById('btnDone');
+		var btnPlayRandom = document.getElementById('btnPlayRandom');
+		if (btnDone) {
+			btnDone.disabled = true;
+		}
+		btnPlayRandom.disabled = true;
+
 		var self = this;
 		networkPlayer.getMove(this.board.toString(), function(actions) {
 			var actionResult = self.board.playActions(actions);
-			if (actionResult.msg)console.log(actionResult.msg);
-			self.flashMsg(actionResult.msg);	
+			if (actionResult.msg) {
+				console.log(actionResult.msg);
+				var boardStr = this.board.toString();
+				window.location.hash = boardStr;
+				this.stateHistory.push(boardStr);
+			}
+			self.flashMsg(actionResult.msg);
+			
+			if (btnDone) btnDone.disabled = false;							
+			btnPlayRandom.disabled = false;
 		});
 
 	}
@@ -93,9 +151,10 @@ export class BoardUI extends Component {
 	onChangeTurn = (e) => {
 		var action = this.board.changeTurn();
 		if (action.status) {
-			var boardStr = this.board.toString();				
-			//window.location.hash = boardStr;
-			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27})); //Hack to clear trade UI						
+			var boardStr = this.board.toString();
+			window.location.hash = boardStr;
+			this.stateHistory.push(boardStr);
+			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27})); //Hack to clear trade UI - TODO: replace with game event				
 		}
 		this.flashMsg(action.msg);
 	}
@@ -104,6 +163,9 @@ export class BoardUI extends Component {
 
 	onTrade = (tradeResids) => {
 		var action = this.board.trade(tradeResids);
+		var boardStr = this.board.toString();
+		window.location.hash = boardStr;
+		this.stateHistory.push(boardStr);
 		this.flashMsg(action.msg);
 	}
 
@@ -140,7 +202,8 @@ export class BoardUI extends Component {
 			var y = constants.NID_TO_R[nid] * UNIT_NODE;
 			var color = SIDE_COLORS[node.side];		
 			var side = node.side;
-			nodeUIs.push(html`<${NodeUI} nid=${nid} side=${side} x=${x} y=${y} color=${color} click=${this.onNodeClick}/>`);
+			var last = (this.board.lastNids.indexOf(nid) >= 0)? true : false;
+			nodeUIs.push(html`<${NodeUI} nid=${nid} side=${side} x=${x} y=${y} last=${last} color=${color} click=${this.onNodeClick}/>`);
 		}
 		return nodeUIs;
 	}
@@ -154,7 +217,8 @@ export class BoardUI extends Component {
 			var color = SIDE_COLORS[road.side];			
 			var orient = road.orientation;
 			var side = road.side;
-			roadUIs.push(html`<${RoadUI} rid=${rid} side=${side} orient=${orient} x=${x} y=${y} color=${color} click=${this.onRoadClick}/>`);
+			var last = (this.board.lastRids.indexOf(rid) >= 0)? true : false;
+			roadUIs.push(html`<${RoadUI} rid=${rid} side=${side} orient=${orient} last=${last} x=${x} y=${y} color=${color} click=${this.onRoadClick}/>`);
 		}
 		return roadUIs;
 	}
@@ -206,7 +270,7 @@ export class BoardUI extends Component {
 				</div>
 				${this.renderDone()}
 				
-				<svg width="800" height="800" style="border:1px solid black;">
+				<svg width="800" height="800">
 					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[0]}/>
 					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[1]}/>
 					<${TurnUI} x="10" y="575" label="Turn:" value=${turn} phase=${this.board.phase}/>												

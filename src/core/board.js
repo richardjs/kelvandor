@@ -81,8 +81,6 @@ var defaultTileVals = [
 
 export const DEFAULT_BOARD_STATE = 'R2G1B2R3G2Y2V0G3Y1B3R1B1Y3222222222222222222222222222222222222222222222222222222222222000000000000000000';
 export class Board {
-
-
 	constructor() {
 		this.init();
 	}
@@ -95,9 +93,12 @@ export class Board {
 		this.roads = [];
 		this.scores = [0, 0];
 		this.res = [[4,4,2,2],[4,4,2,2]]; 
-		this.hasAlreadyTraded = false;		
+		this.hasAlreadyTraded = false;	
+		this.lastNids = [];
+		this.lastRids = [];	
 	}
 	
+	//TODO: This is just scaffolding - deprecate in favor of loading state string
 	defaultSetup = () => {				
 		for (var r = 0; r < WIDTH_GRID; r++) {
 			for (var c = 0; c < WIDTH_GRID; c++) {
@@ -164,6 +165,7 @@ export class Board {
 	}
 	
 	static fromString = (boardStr) => { //Parse
+		boardStr = boardStr.toUpperCase();						
 		if (boardStr.length < 88) throw('Invalid board string: ', boardStr);
 		
 		var board = new Board();				
@@ -181,7 +183,7 @@ export class Board {
 		
 		//Nodes
 		for (var i = 0; i < constants.COUNT_NODES; i++) {
-			var side = constants.PROTOCOL_TO_SIDES[boardStr[s]];
+			var side = constants.KBN_TO_SIDES[boardStr[s]];
 			var node = new Node(side);
 			board.nodes.push(node);					
 			s++;
@@ -189,17 +191,13 @@ export class Board {
 		
 		//Roads
 		for (var i = 0; i < constants.COUNT_ROADS; i++) {			
-			var side = constants.PROTOCOL_TO_SIDES[boardStr[s]];
+			var side = constants.KBN_TO_SIDES[boardStr[s]];
 			var orientation = ORIENTATIONS[board.roads.length];
 			var road = new Road(side, orientation);
 			board.roads.push(road);
 						
 			s++;
-		}
-		
-		//Phase
-		//board.phase = boardStr[s];
-		//s++;
+		}				
 		
 		//Turn 
 		board.turn = boardStr[s];
@@ -218,10 +216,15 @@ export class Board {
 		}
 		
 		//Traded Status
-		var tradedStatus = boardStr[s+1];
+		s++;
+		var tradedStatus = boardStr[s];
 		board.hasAlreadyTraded = tradedStatus? true : false;
-		
-		//Calculate score, other attributes?
+
+		//Phase
+		s++;
+		board.phase = Number.parseInt(boardStr[s]);
+
+		board.calcScores();		
 		return board;
 	}
 	
@@ -261,10 +264,11 @@ export class Board {
 			nodesStr + 		//Nodes
 			roadsStr + 		//Roads
 			//this.phase +   //Phase
-			constants.SIDES_TO_PROTOCOL[this.turn] + 	//Turn
+			constants.SIDES_TO_KBN[this.turn] + 	//Turn
 			resStr1  +		//Player 1 resources
 			resStr2  +		//Player 2 resources
-			tradedStatusStr //Already traded
+			tradedStatusStr +//Already traded
+			this.phase
 		).toLowerCase();
 	}
 	
@@ -285,7 +289,9 @@ export class Board {
 		//PLACE Player 2 - first
 		else if (this.phase == constants.PHASE_PLACE2_1) {
 			if (this.res[side][constants.RES_GREEN] == 4 && this.res[side][constants.RES_YELLOW] == 4) {
-				this.buyNode(side, nid);
+				this.lastNids = [];
+				this.lastRids = [];
+				this.buyNode(side, nid);				
 				return {status:true, msg:'Node placed...'};
 			}
 			else return {status:false, msg:'Road must be placed next...'};			
@@ -295,6 +301,8 @@ export class Board {
 		else if (this.phase == constants.PHASE_PLACE2_2) {
 			if (this.res[side][constants.RES_BLUE] != 1 || this.res[side][constants.RES_RED] != 1) return {status:false, msg:'Unable to place node...'};
 			else if (this.res[side][constants.RES_GREEN] == 2 && this.res[side][constants.RES_YELLOW] == 2) {
+				this.lastNids = [];
+				this.lastRids = [];
 				this.buyNode(side, nid);
 				return {status:true, msg:'Node placed...'};
 			}
@@ -305,6 +313,8 @@ export class Board {
 		else if (this.phase == constants.PHASE_PLACE1_2) {
 			if (this.res[side][constants.RES_BLUE] != 1 || this.res[side][constants.RES_RED] != 1) return {status:false, msg:'Unable to place node...'};
 			else if (this.res[side][constants.RES_GREEN] == 2 && this.res[side][constants.RES_YELLOW] == 2) {
+				this.lastNids = [];
+				this.lastRids = [];
 				this.buyNode(side, nid);
 				return {status:true, msg:'Node placed...'};
 			}
@@ -362,7 +372,7 @@ export class Board {
 			else if (this.res[side][constants.RES_BLUE] == 1 && this.res[side][constants.RES_RED] == 1) {
 				this.buyRoad(side, rid);
 				this.turn = constants.SIDE_1;
-				this.phase = constants.PHASE_PLACE1_2;
+				this.phase = constants.PHASE_PLACE1_2;				
 				return {status:true, msg:'Road placed...'};
 			}
 			else return {status:false, msg:'Unable to place road...'}; 
@@ -377,6 +387,8 @@ export class Board {
 				this.turn = constants.SIDE_2;
 				this.harvest(this.turn);
 				this.phase = constants.PHASE_PLAY;
+				this.lastNids = [];
+				this.lastRids = [];
 				return {status:true, msg:'Road placed...'};
 			}
 			else return {status:false, msg:'Unable to place road...'};
@@ -413,6 +425,7 @@ export class Board {
 		this.res[side][constants.RES_GREEN]-=2;
 		this.res[side][constants.RES_YELLOW]-=2;
 		this.nodes[nid].side = side;
+		this.lastNids.push(nid);
 
 		//Exhaust tiles
 		var tids = adj.TILES_ADJ_NODE[nid];		
@@ -431,6 +444,7 @@ export class Board {
 		this.res[side][constants.RES_BLUE]--;
 		this.res[side][constants.RES_RED]--;
 		this.roads[rid].side = side;
+		this.lastRids.push(rid);
 	}
 	
 	changeTurn = () => {
@@ -445,9 +459,11 @@ export class Board {
 			alert('Game Over!');
 			return {status:false, msg:'Game Over!'};
 		}
+		this.lastNids = [];
+		this.lastRids = [];
 		this.turn = (this.turn == constants.SIDE_1)? constants.SIDE_2 : constants.SIDE_1;
 		this.hasAlreadyTraded = false;
-		this.harvest(this.turn);
+		this.harvest(this.turn);		
 		return {status:true, msg:'Changing Player...'};
 		
 	}
@@ -580,6 +596,8 @@ export class Board {
 
 	playActions = (actions) => { //Actions is an array of KMN action strings
 		console.log(actions);
+		this.lastNids = [];
+		this.lastRids = [];
 		for (var a = 0; a < actions.length; a++){
 			var action = actions[a].toUpperCase();
 			var actionChar = action[0];
@@ -588,6 +606,8 @@ export class Board {
 			if (actionChar == 'S') { 
 				var nid = Number.parseInt(action.substr(1,2));
 				var rid = Number.parseInt(action.substr(3));
+				this.lastNids.push(nid);
+				this.lastRids.push(rid);
 				var actionAddNode = this.addNode(nid);				
 				if (actionAddNode.status) {
 					console.log('Added node', nid);
@@ -614,6 +634,7 @@ export class Board {
 			//Build node
 			else if (actionChar == 'N') {
 				var nid = Number.parseInt(action.substr(1,2));
+				this.lastNids.push(nid);
 				var actionAddNode = this.addNode(nid);
 				if (!actionAddNode.status) return actionAddNode;
 				else console.log('Added node', nid);
@@ -622,6 +643,7 @@ export class Board {
 			//Build branch (road)
 			else if (actionChar == 'B') {
 				var rid = Number.parseInt(action.substr(1));
+				this.lastRids.push(rid);
 				var actionAddRoad = this.addRoad(rid);	
 					if (!actionAddRoad.status) return actionAddRoad;
 					else console.log('Added road', rid);
@@ -634,6 +656,13 @@ export class Board {
 
 			else return {status:false, msg:'Unrecognized action: ' + actionChar};
 		}
+
+		this.calcScores();
+		if (this.isGameOver()) {
+			alert('Game Over!');
+			return {status:false, msg:'Game Over!'};
+		}
+
 		return {status:true, msg:''};
 	}
 

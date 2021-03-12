@@ -72,7 +72,7 @@ export class TradeUI extends Component {
 	renderCenterText = (x,y) => {
 		return (
 			html `
-				<text class="label"
+				<text class="label lblTrade"
 					x=${x+10}
 					y=${y+30} 							
 				>${this.props.value-this.props.dots}</text>

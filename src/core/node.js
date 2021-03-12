@@ -1,4 +1,4 @@
-import {SIDES_TO_PROTOCOL} from './constants.js';
+import {SIDES_TO_KBN} from './constants.js';
 const I = -1; //Invalid shorthand for instantiation
 const RC_TO_NID = [
 	[ I,  I,  I,  I,  0,  I,  1,  I,  I,  I,   I], 	//Row 0
@@ -22,7 +22,7 @@ export class Node {
 	}	
 	
 	toString = () => {		
-		return SIDES_TO_PROTOCOL[this.side];
+		return SIDES_TO_KBN[this.side];
 	}
 
 }

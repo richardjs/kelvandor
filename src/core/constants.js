@@ -2,8 +2,8 @@ export const SIDE_1 = 0;
 export const SIDE_2 = 1;
 export const SIDE_NONE = 2;
 
-export const SIDES_TO_PROTOCOL = [1,2,0];
-export const PROTOCOL_TO_SIDES = [2,0,1];
+export const SIDES_TO_KBN = [1,2,0];
+export const KBN_TO_SIDES = [2,0,1];
 
 export const COUNT_TILES = 13;
 export const COUNT_NODES = 24;

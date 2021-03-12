@@ -12,6 +12,8 @@ export class NodeUI extends Component {
 	
 	render() {
 		var cssClass = (this.props.side == SIDE_NONE)? 'node empty' : 'node';
+		if (this.props.last) cssClass += ' last';
+		
 		return (
 			html`<circle 
 					class=${cssClass}

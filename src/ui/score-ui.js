@@ -6,7 +6,7 @@ export function ScoreUI (props) {
 			<text class="label"
 				x=${this.props.x}
 				y=${this.props.y} 							
-			>${this.props.label}${this.props.value}</text>
+			>${this.props.label} ${this.props.value}</text>
 		`
 	);	
 }
