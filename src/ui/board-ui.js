@@ -26,15 +26,11 @@ export class BoardUI extends Component {
 		document.addEventListener('keydown', this.onKeyDown);
 		document.addEventListener('contextmenu', this.onRightClick);		    
 		
-		//this.board = Board.fromString(DEFAULT_BOARD_STATE);
-		this.board = new Board();
-		this.board.defaultSetup();
+		this.board = Board.fromString(DEFAULT_BOARD_STATE);
+		//this.board = new Board();
+		//this.board.defaultSetup();		
 		this.stateHistory = [this.board.toString()];
-		this.stateRedo = [];
-		
-		//let state = new kelvandor.State();
-		//console.log(state.toString());						
-		//state.delete();
+		this.stateRedo = [];				
 	}
 		
 	
@@ -42,9 +38,7 @@ export class BoardUI extends Component {
 	onNodeClick = (nid) => {
 		var action = this.board.addNode(nid);		
 		if (action.status) {			
-			var boardStr = this.board.toString();
-			window.location.hash = boardStr;
-			this.stateHistory.push(boardStr);
+			this.recordState();
 		}
 		this.flashMsg(action.msg);	
 	}
@@ -52,9 +46,7 @@ export class BoardUI extends Component {
 	onRoadClick = (rid) => {
 		var action = this.board.addRoad(rid);
 		if (action.status) {			
-			var boardStr = this.board.toString();
-			window.location.hash = boardStr;
-			this.stateHistory.push(boardStr);
+			this.recordState();
 		}
 		this.flashMsg(action.msg);	
 	}
@@ -73,11 +65,17 @@ export class BoardUI extends Component {
 			this.onShuffle();
 			this.forceUpdate();
 		}
-
+		
+		//Conflict with Red trade resource
+		if (e.key == 'n') { //new
+			this.onReset();
+			this.forceUpdate();
+		}
 	
 		if (e.key == 'ArrowLeft' || (e.key == 'z' && e.ctrlKey)) { //Undo
 			
-			if (this.stateHistory.length) {
+			if (this.stateHistory.length > 1) {				
+				if (!this.stateRedo.length) this.stateRedo.push(this.stateHistory.pop());				
 				var prev = this.stateHistory.pop();
 				this.stateRedo.push(prev);
 				
@@ -88,17 +86,14 @@ export class BoardUI extends Component {
 		else if (e.key == 'ArrowRight' || (e.key == 'y' && e.ctrlKey)) { //redo
 			if (this.stateRedo.length) {
 				var next = this.stateRedo.pop();
+				if (next == this.board.toString()) next = this.stateRedo.pop();
 				this.stateHistory.push(next);
 				this.board = Board.fromString(next);
 				this.forceUpdate();
 			}
 		}		
 
-		//Conflict with Red trade resource
-		//if (e.key == 'r') {
-		//	this.onReset();
-		//	this.forceUpdate();
-		//}
+	
 
 	}
 	
@@ -114,6 +109,8 @@ export class BoardUI extends Component {
 	}
 
 	onReset = (e) => {
+		this.stateHistory = [];
+		this.stateRedo = [];
 		this.board.reset();
 		this.forceUpdate();
 	}
@@ -131,9 +128,7 @@ export class BoardUI extends Component {
 			var actionResult = self.board.playActions(actions);
 			if (actionResult.msg) {
 				console.log(actionResult.msg);
-				var boardStr = this.board.toString();
-				window.location.hash = boardStr;
-				this.stateHistory.push(boardStr);
+				self.recordState();
 			}
 			self.flashMsg(actionResult.msg);
 			
@@ -143,17 +138,15 @@ export class BoardUI extends Component {
 
 	}
 
-	onHarvest = (e) => {
-		this.board.harvest();
-		this.forceUpdate();		
-	}
+	//onHarvest = (e) => {
+	//	this.board.harvest();
+	//	this.forceUpdate();		
+	//}
 	
 	onChangeTurn = (e) => {
-		var action = this.board.changeTurn();
+		var action = this.board.changeTurn(true);
 		if (action.status) {
-			var boardStr = this.board.toString();
-			window.location.hash = boardStr;
-			this.stateHistory.push(boardStr);
+			this.recordState();
 			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27})); //Hack to clear trade UI - TODO: replace with game event				
 		}
 		this.flashMsg(action.msg);
@@ -163,10 +156,14 @@ export class BoardUI extends Component {
 
 	onTrade = (tradeResids) => {
 		var action = this.board.trade(tradeResids);
-		var boardStr = this.board.toString();
-		window.location.hash = boardStr;
-		this.stateHistory.push(boardStr);
+		this.recordState();		
 		this.flashMsg(action.msg);
+	}
+
+	recordState = () => {
+		var boardStr = this.board.toString();
+		//window.location.hash = boardStr;
+		this.stateHistory.push(boardStr);
 	}
 
 	flashMsg = (msg) => {

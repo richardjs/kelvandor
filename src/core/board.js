@@ -79,7 +79,7 @@ var defaultTileVals = [
 
 
 
-export const DEFAULT_BOARD_STATE = 'R2G1B2R3G2Y2V0G3Y1B3R1B1Y3222222222222222222222222222222222222222222222222222222222222000000000000000000';
+export const DEFAULT_BOARD_STATE = 'r2g1b2r3g2y2v0g3y1b3r1b1y30000000000000000000000000000000000000000000000000000000000001040402020404020200';
 export class Board {
 	constructor() {
 		this.init();
@@ -200,7 +200,7 @@ export class Board {
 		}				
 		
 		//Turn 
-		board.turn = boardStr[s];
+		board.turn = constants.KBN_TO_SIDES[boardStr[s]];		
 		s++;
 		
 		//Resources			
@@ -216,13 +216,12 @@ export class Board {
 		}
 		
 		//Traded Status
-		s++;
 		var tradedStatus = boardStr[s];
 		board.hasAlreadyTraded = tradedStatus? true : false;
-
-		//Phase
 		s++;
-		board.phase = Number.parseInt(boardStr[s]);
+
+		//Phase		
+		board.phase = Number.parseInt(boardStr[s]);		
 
 		board.calcScores();		
 		return board;
@@ -262,8 +261,7 @@ export class Board {
 		return (
 			tilesStr + 		//Tiles
 			nodesStr + 		//Nodes
-			roadsStr + 		//Roads
-			//this.phase +   //Phase
+			roadsStr + 		//Roads			
 			constants.SIDES_TO_KBN[this.turn] + 	//Turn
 			resStr1  +		//Player 1 resources
 			resStr2  +		//Player 2 resources
@@ -288,9 +286,7 @@ export class Board {
 
 		//PLACE Player 2 - first
 		else if (this.phase == constants.PHASE_PLACE2_1) {
-			if (this.res[side][constants.RES_GREEN] == 4 && this.res[side][constants.RES_YELLOW] == 4) {
-				this.lastNids = [];
-				this.lastRids = [];
+			if (this.res[side][constants.RES_GREEN] == 4 && this.res[side][constants.RES_YELLOW] == 4) {				
 				this.buyNode(side, nid);				
 				return {status:true, msg:'Node placed...'};
 			}
@@ -300,9 +296,7 @@ export class Board {
 		//PLACE Player 2 - second
 		else if (this.phase == constants.PHASE_PLACE2_2) {
 			if (this.res[side][constants.RES_BLUE] != 1 || this.res[side][constants.RES_RED] != 1) return {status:false, msg:'Unable to place node...'};
-			else if (this.res[side][constants.RES_GREEN] == 2 && this.res[side][constants.RES_YELLOW] == 2) {
-				this.lastNids = [];
-				this.lastRids = [];
+			else if (this.res[side][constants.RES_GREEN] == 2 && this.res[side][constants.RES_YELLOW] == 2) {				
 				this.buyNode(side, nid);
 				return {status:true, msg:'Node placed...'};
 			}
@@ -312,9 +306,7 @@ export class Board {
 		//PLACE Player 1 - second
 		else if (this.phase == constants.PHASE_PLACE1_2) {
 			if (this.res[side][constants.RES_BLUE] != 1 || this.res[side][constants.RES_RED] != 1) return {status:false, msg:'Unable to place node...'};
-			else if (this.res[side][constants.RES_GREEN] == 2 && this.res[side][constants.RES_YELLOW] == 2) {
-				this.lastNids = [];
-				this.lastRids = [];
+			else if (this.res[side][constants.RES_GREEN] == 2 && this.res[side][constants.RES_YELLOW] == 2) {				
 				this.buyNode(side, nid);
 				return {status:true, msg:'Node placed...'};
 			}
@@ -386,9 +378,7 @@ export class Board {
 				this.buyRoad(side, rid);
 				this.turn = constants.SIDE_2;
 				this.harvest(this.turn);
-				this.phase = constants.PHASE_PLAY;
-				this.lastNids = [];
-				this.lastRids = [];
+				this.phase = constants.PHASE_PLAY;	
 				return {status:true, msg:'Road placed...'};
 			}
 			else return {status:false, msg:'Unable to place road...'};
@@ -425,7 +415,7 @@ export class Board {
 		this.res[side][constants.RES_GREEN]-=2;
 		this.res[side][constants.RES_YELLOW]-=2;
 		this.nodes[nid].side = side;
-		this.lastNids.push(nid);
+		
 
 		//Exhaust tiles
 		var tids = adj.TILES_ADJ_NODE[nid];		
@@ -444,10 +434,10 @@ export class Board {
 		this.res[side][constants.RES_BLUE]--;
 		this.res[side][constants.RES_RED]--;
 		this.roads[rid].side = side;
-		this.lastRids.push(rid);
+		
 	}
 	
-	changeTurn = () => {
+	changeTurn = (clearLast) => {
 
 		var side = this.turn;
 		if (this.phase != constants.PHASE_PLAY) return {status:false, msg:'Turn can not be changed until the play phase...'};		
@@ -459,10 +449,13 @@ export class Board {
 			alert('Game Over!');
 			return {status:false, msg:'Game Over!'};
 		}
-		this.lastNids = [];
-		this.lastRids = [];
+		
 		this.turn = (this.turn == constants.SIDE_1)? constants.SIDE_2 : constants.SIDE_1;
 		this.hasAlreadyTraded = false;
+		if (clearLast) {
+			this.lastNids = [];
+			this.lastRids = [];
+		}
 		this.harvest(this.turn);		
 		return {status:true, msg:'Changing Player...'};
 		
@@ -651,7 +644,7 @@ export class Board {
 
 			//End
 			else if (actionChar == 'E') {
-				return this.changeTurn();				
+				return this.changeTurn(false);				
 			}
 
 			else return {status:false, msg:'Unrecognized action: ' + actionChar};
