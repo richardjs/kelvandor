@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "%s\n", stateString);
 
     if (State_currentPlayerWon(&results.state)) {
-        fprintf(stderr, "player %d wins\n", state.turn + 1);
+        fprintf(stderr, "winner: player %d\n", state.turn + 1);
     }
 
     return 0;
