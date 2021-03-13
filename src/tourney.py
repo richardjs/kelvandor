@@ -1,6 +1,6 @@
 import argparse
 import time
-from collections import Counter
+from itertools import combinations
 from statistics import mean
 from subprocess import Popen, PIPE
 from sys import stdout
@@ -96,18 +96,18 @@ def play_game_pair(engine1, engine2):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('engine_cmd1')
-parser.add_argument('engine_cmd2')
+parser.add_argument('-e', '--engine', action='append')
 parser.add_argument('-n', '--game-pairs', type=int, default=10)
 args = parser.parse_args()
 
+engines = []
+for engine_cmd in args.engine:
+    engines.append(Engine(engine_cmd))
 
-engine1 = Engine(args.engine_cmd1)
-engine2 = Engine(args.engine_cmd2)
 
-
-for _ in range(args.game_pairs):
-    play_game_pair(engine1, engine2)
+for engine1, engine2 in combinations(engines, 2):
+    for _ in range(args.game_pairs):
+        play_game_pair(engine1, engine2)
 
 
 # for result in results:
