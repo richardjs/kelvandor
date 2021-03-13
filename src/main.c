@@ -9,18 +9,18 @@
 #include <unistd.h>
 
 
-void printUsage(char name[])
+void printBanner()
 {
-    fprintf(stderr, "Usage: %s [options] serialized board\n\
-Options:\n\
-    -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
-    -g\t\t\tgenerate a starting state string\n\
-    -i iterations\tnumber of MCTS iterations per action\n\
-    -s\t\t\tsingle action mode\n", name);
+    fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
+
+    char hostname[1024];
+    hostname[1023] = '\0';
+    gethostname(hostname, 1023);
+    fprintf(stderr, "Host: %s\n", hostname);
 }
 
 
-void generateStart()
+void printStart()
 {
     struct State state;
     State_randomStart(&state);
@@ -31,6 +31,18 @@ void generateStart()
 }
 
 
+void printUsage(char name[])
+{
+    fprintf(stderr, "Usage: %s [options] serialized board\n\
+Options:\n\
+    -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
+    -g\t\t\tgenerate a starting state string\n\
+    -i iterations\tnumber of MCTS iterations per action\n\
+    -s\t\t\tsingle action mode\n\
+    -v\t\t\tprint version information and exit\n", name);
+}
+
+
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
@@ -38,7 +50,7 @@ int main(int argc, char *argv[])
     struct MCTSOptions options;
     MCTSOptions_default(&options);
     int opt;
-    while ((opt = getopt(argc, argv, "i:c:sg")) != -1) {
+    while ((opt = getopt(argc, argv, "i:c:sgv")) != -1) {
         switch (opt) {
             case 'i':
                 options.iterations = atoi(optarg);
@@ -50,7 +62,10 @@ int main(int argc, char *argv[])
                 options.multiaction = false;
                 break;
             case 'g':
-                generateStart();
+                printStart();
+                return 0;
+            case 'v':
+                printBanner();
                 return 0;
             default:
                 printUsage(argv[0]);
@@ -62,12 +77,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
-
-    char hostname[1024];
-    hostname[1023] = '\0';
-    gethostname(hostname, 1023);
-    fprintf(stderr, "Host: %s\n", hostname);
+    printBanner();
 
     fprintf(stderr, "Input: %s\n", argv[optind]);
     if (!validStateString(argv[optind])) {
