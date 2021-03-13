@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import time
 from itertools import combinations
 from statistics import mean
@@ -98,6 +99,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--engine', action='append')
     parser.add_argument('-n', '--game-pairs', type=int, default=10)
+    parser.add_argument('-w', '--results-file', type=argparse.FileType('wb'))
     args = parser.parse_args()
 
     engines = []
@@ -112,6 +114,9 @@ def main():
     for engine1, engine2 in combinations(engines, 2):
         for initial_state in initial_states:
             play_game_pair(engine1, engine2, initial_state)
+
+    if args.results_file:
+        pickle.dump(results, args.results_file)
 
 
 if __name__ == '__main__':
