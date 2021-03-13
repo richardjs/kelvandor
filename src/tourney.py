@@ -1,6 +1,7 @@
 import argparse
 import pickle
 import time
+from collections import Counter
 from datetime import timedelta
 from itertools import combinations
 from random import shuffle
@@ -82,7 +83,7 @@ def play_game(engine1, engine2, initial_state):
 
         if winner:
             results.append(Results(
-                players=(engine1, engine2),
+                players=[engine1, engine2],
                 winner=engine,
                 loser=engines[0],
                 turns=turns,
@@ -90,6 +91,25 @@ def play_game(engine1, engine2, initial_state):
             ))
             print(f'\r{results[-1]}')
             return engine
+
+
+def print_results():
+    engine_wins = Counter()
+    player_wins = Counter()
+    for result in results:
+        engine_wins[result.winner] += 1
+        engine_wins[result.loser] += 0
+        player_wins[result.players.index(result.winner) + 1] += 1
+
+    print('Wins\tTime\tEngine')
+    for engine, wins in engine_wins.most_common():
+        print(f'{wins}\t{mean(engine.times):.1f}s\t{engine}')
+
+    print('\nWins\tPlayer')
+    for player, wins in player_wins.most_common():
+        print(f'{wins}\tPlayer {player}')
+
+    print()
 
 
 def main():
@@ -123,6 +143,9 @@ def main():
                 mean_time = mean([result.time for result in results])
                 remaining_games = total_games - played_games
                 etr = timedelta(seconds=int(mean_time * remaining_games))
+
+                print()
+                print_results()
                 print(f'{played_games}/{total_games}\t{percentage:.2f}%\tapproximately {etr} remaining')
 
     if args.results_file:
