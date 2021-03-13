@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "State after actions:\n");
     State_print(&results.state);
     char stateString[STATE_STRING_SIZE];
-    State_toString(&state, stateString);
+    State_toString(&results.state, stateString);
     fprintf(stderr, "%s\n", stateString);
 
     return 0;
