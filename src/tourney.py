@@ -140,13 +140,14 @@ def main():
                 played_games += 1
 
                 percentage = 100 * played_games / total_games
+                mean_turns = mean([result.turns for result in results])
                 mean_time = mean([result.time for result in results])
                 remaining_games = total_games - played_games
                 etr = timedelta(seconds=int(mean_time * remaining_games))
 
                 print()
                 print_results()
-                print(f'{played_games}/{total_games}\t{percentage:.2f}%\tapproximately {etr} remaining')
+                print(f'{played_games}/{total_games}\t{percentage:.0f}%\tavg.game {mean_turns:.0f}t/{mean_time:.1f}s\tapprox. {etr} remaining')
 
     if args.results_file:
         pickle.dump(results, args.results_file)
