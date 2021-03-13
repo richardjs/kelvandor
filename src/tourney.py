@@ -43,14 +43,19 @@ class Engine:
         start = time.perf_counter()
 
         p = Popen(self.cmd.split() + args.split(), stdout=PIPE, stderr=PIPE)
-        p.wait()
+        ret = p.wait()
+        stderr = p.stderr.read().decode('utf-8').strip()
+
+        if ret != 0:
+            print(f'\nError code {ret}')
+            input(stderr)
 
         if record_time:
             self.times.append(time.perf_counter() - start)
 
         return (
             p.stdout.read().decode('utf-8').strip(),
-            p.stderr.read().decode('utf-8').strip(),
+            stderr,
         )
 
     def move(self, state):

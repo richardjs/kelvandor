@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     if (state.actionCount == 0) {
         fprintf(stderr, "No actions from state\n");
-        return 0;
+        return 3;
     }
 
     struct MCTSResults results;
