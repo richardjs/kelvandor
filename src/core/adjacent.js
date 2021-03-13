@@ -186,8 +186,8 @@ export const TILES_ADJ_ROAD = [ //Tiles that touch a given road
 	[7,8],//Rid19
 	[8],//Rid20
 	[4],//Rid21
-	[5],//Rid22
-	[9],//Rid23
+	[5,9],//Rid22
+	[6,10],//Rid23
 	[7,11],//Rid24
 	[8],//Rid25
 	[9],//Rid26
