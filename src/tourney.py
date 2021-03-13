@@ -95,20 +95,20 @@ def play_game_pair(engine1, engine2):
     play_game(start, engine2, engine1)
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-e', '--engine', action='append')
-parser.add_argument('-n', '--game-pairs', type=int, default=10)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--engine', action='append')
+    parser.add_argument('-n', '--game-pairs', type=int, default=10)
+    args = parser.parse_args()
 
-engines = []
-for engine_cmd in args.engine:
-    engines.append(Engine(engine_cmd))
+    engines = []
+    for engine_cmd in args.engine:
+        engines.append(Engine(engine_cmd))
+
+    for engine1, engine2 in combinations(engines, 2):
+        for _ in range(args.game_pairs):
+            play_game_pair(engine1, engine2)
 
 
-for engine1, engine2 in combinations(engines, 2):
-    for _ in range(args.game_pairs):
-        play_game_pair(engine1, engine2)
-
-
-# for result in results:
-#    print(result)
+if __name__ == '__main__':
+    main()
