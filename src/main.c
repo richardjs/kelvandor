@@ -9,14 +9,14 @@
 #include <unistd.h>
 
 
-void printBanner()
+void printBanner(FILE* stream)
 {
-    fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
+    fprintf(stream, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
 
     char hostname[1024];
     hostname[1023] = '\0';
     gethostname(hostname, 1023);
-    fprintf(stderr, "Host: %s\n", hostname);
+    fprintf(stream, "Host: %s\n", hostname);
 }
 
 
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
                 printStart();
                 return 0;
             case 'v':
-                printBanner();
+                printBanner(stdout);
                 return 0;
             default:
                 printUsage(argv[0]);
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printBanner();
+    printBanner(stderr);
 
     fprintf(stderr, "Input: %s\n", argv[optind]);
     if (!validStateString(argv[optind])) {
