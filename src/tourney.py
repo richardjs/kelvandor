@@ -1,7 +1,9 @@
 import argparse
 import pickle
 import time
+from datetime import timedelta
 from itertools import combinations
+from random import shuffle
 from statistics import mean
 from subprocess import Popen, PIPE
 from sys import stdout
@@ -90,11 +92,6 @@ def play_game(engine1, engine2, initial_state):
             return engine
 
 
-def play_game_pair(engine1, engine2, initial_state):
-    play_game(engine1, engine2, initial_state)
-    play_game(engine2, engine1, initial_state)
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--engine', action='append')
@@ -111,9 +108,22 @@ def main():
         initial_state, _ = engines[0].run('-g')
         initial_states.append(initial_state)
 
-    for engine1, engine2 in combinations(engines, 2):
+    total_games = 2 * len(initial_states) * len(list(combinations(engines, 2)))
+    played_games = 0
+
+    matchups = list(combinations(engines, 2))
+    shuffle(matchups)
+    for engine1, engine2 in matchups:
         for initial_state in initial_states:
-            play_game_pair(engine1, engine2, initial_state)
+            for p1, p2 in [(engine1, engine2), (engine2, engine1)]:
+                play_game(p1, p2, initial_state)
+                played_games += 1
+
+                percentage = 100 * played_games / total_games
+                mean_time = mean([result.time for result in results])
+                remaining_games = total_games - played_games
+                etr = timedelta(seconds=int(mean_time * remaining_games))
+                print(f'{played_games}/{total_games}\t{percentage:.2f}%\tapproximately {etr} remaining')
 
     if args.results_file:
         pickle.dump(results, args.results_file)
