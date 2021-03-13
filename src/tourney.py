@@ -62,7 +62,7 @@ class Engine:
         return self.cmd
 
 
-def play_game(initial_state, engine1, engine2):
+def play_game(engine1, engine2, initial_state):
     start = time.perf_counter()
 
     engines = [engine1, engine2]
@@ -89,10 +89,9 @@ def play_game(initial_state, engine1, engine2):
             return engine
 
 
-def play_game_pair(engine1, engine2):
-    start, _ = engine1.run('-g')
-    play_game(start, engine1, engine2)
-    play_game(start, engine2, engine1)
+def play_game_pair(engine1, engine2, initial_state):
+    play_game(engine1, engine2, initial_state)
+    play_game(engine2, engine1, initial_state)
 
 
 def main():
@@ -105,9 +104,14 @@ def main():
     for engine_cmd in args.engine:
         engines.append(Engine(engine_cmd))
 
+    initial_states = []
+    for _ in range(args.game_pairs):
+        initial_state, _ = engines[0].run('-g')
+        initial_states.append(initial_state)
+
     for engine1, engine2 in combinations(engines, 2):
-        for _ in range(args.game_pairs):
-            play_game_pair(engine1, engine2)
+        for initial_state in initial_states:
+            play_game_pair(engine1, engine2, initial_state)
 
 
 if __name__ == '__main__':
