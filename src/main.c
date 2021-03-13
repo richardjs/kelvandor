@@ -13,25 +13,32 @@ void printUsage(char name[])
 {
     fprintf(stderr, "Usage: %s [options] serialized board\n\
 Options:\n\
-    -i iterations\tnumber of MCTS iterations per action\n\
     -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
+    -g\t\t\tgenerate a starting state string\n\
+    -i iterations\tnumber of MCTS iterations per action\n\
     -s\t\t\tsingle action mode\n", name);
+}
+
+
+void generateStart()
+{
+    struct State state;
+    State_randomStart(&state);
+
+    char stateString[STATE_STRING_SIZE];
+    State_toString(&state, stateString);
+    printf("%s\n", stateString);
 }
 
 
 int main(int argc, char *argv[])
 {
-    fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
-
-    char hostname[1024];
-    hostname[1023] = '\0';
-    gethostname(hostname, 1023);
-    fprintf(stderr, "Host: %s\n", hostname);
+    srand(time(NULL));
 
     struct MCTSOptions options;
     MCTSOptions_default(&options);
     int opt;
-    while ((opt = getopt(argc, argv, "i:c:s")) != -1) {
+    while ((opt = getopt(argc, argv, "i:c:sg")) != -1) {
         switch (opt) {
             case 'i':
                 options.iterations = atoi(optarg);
@@ -42,6 +49,9 @@ int main(int argc, char *argv[])
             case 's':
                 options.multiaction = false;
                 break;
+            case 'g':
+                generateStart();
+                return 0;
             default:
                 printUsage(argv[0]);
                 return 1;
@@ -52,13 +62,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    fprintf(stderr, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
+
+    char hostname[1024];
+    hostname[1023] = '\0';
+    gethostname(hostname, 1023);
+    fprintf(stderr, "Host: %s\n", hostname);
+
     fprintf(stderr, "Input: %s\n", argv[optind]);
     if (!validStateString(argv[optind])) {
         fprintf(stderr, "Invalid state string: %s\n", argv[optind]);
         return 2;
     }
-
-    srand(time(NULL));
 
     struct State state;
     State_fromString(&state, argv[optind]);
