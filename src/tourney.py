@@ -10,6 +10,9 @@ from subprocess import Popen, PIPE
 from sys import stdout
 
 
+SAME_BOARD_DRAW = 20
+
+
 results = []
 
 
@@ -71,8 +74,10 @@ def play_game(engine1, engine2, initial_state):
 
     engines = [engine1, engine2]
     state = initial_state
+    board = state[:86]
 
     turns = 0
+    same_board_turns = 0
     while True:
         engine = engines.pop(0)
         engines.append(engine)
@@ -80,6 +85,15 @@ def play_game(engine1, engine2, initial_state):
         turns += 1
         stdout.write((f'\r{engine1} versus {engine2} turn {turns}'))
         state, winner = engine.move(state)
+
+        if board == state[:86]:
+            same_board_turns += 1
+            if same_board_turns > SAME_BOARD_DRAW:
+                print(f'\n{engine1} drew {engine2}. Playing again...')
+                return play_game(engine1, engine2, initial_state)
+        else:
+            board = state[:86]
+            same_board_turns = 0
 
         if winner:
             results.append(Results(
