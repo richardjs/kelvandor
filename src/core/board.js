@@ -397,17 +397,9 @@ export class Board {
 		//Check for capture
 		var tids = adj.TILES_ADJ_ROAD[rid];
 		for (var t = 0; t < tids.length; t++) {
-			var tid = tids[t];			
-			var tile = this.tiles[tid];
-					
-			var roadCount = this.countRoadsOnTile(tid, this.turn);					
-			if (roadCount == 4) {
-				this.tiles[tid].captured = this.turn;
-				this.tiles[tid].isExhausted = false; //Un-exhaust if captured
-			}
-			
+			this.updateCapture(tids[t], this.turn);
 		}
-				
+
 		return {status:true, msg:'Road added'};
 	}
 
@@ -481,7 +473,51 @@ export class Board {
 		return count;
 	}
 
-	
+	updateCapture = (tid, side) => {
+		var checkTiles = Array();
+		checkTiles.push(tid);
+		var crumbs = Array();
+		var capture = true;
+
+		while (checkTiles.length && capture) {
+			var tid = checkTiles.pop();
+			crumbs.push(tid);
+
+			var rids = adj.ROADS_ADJ_TILE[tid];
+			for (var r = 0; r < rids.length; r++) {
+				var rid = rids[r];
+
+				if (this.roads[rid].side == this.turn) {
+				}
+				else if (this.roads[rid].side == constants.SIDE_NONE) {
+					var tids = adj.TILES_ADJ_ROAD[rid];
+					if (tids.length == 1) {
+						capture = false;
+						break;
+					}
+
+					for (var t = 0; t < tids.length; t++) {
+						var tid = tids[t];
+						if (!crumbs.includes(tid)) {
+							checkTiles.push(tid);
+						}
+					}
+				}
+				else {
+					capture = false;
+					break;
+				}
+			}
+		}
+
+		if(capture) {
+			for (var i = 0; i < crumbs.length; i++) {
+				this.tiles[crumbs[i]].captured = this.turn;
+				this.tiles[crumbs[i]].isExhausted = false; //Un-exhaust if captured
+			}
+		}
+	}
+
 	
 	harvest = (side) => {
 		
