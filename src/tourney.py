@@ -146,10 +146,13 @@ def print_results():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--engine', action='append')
+    parser.add_argument('-e', '--engine', action='append', required=True)
     parser.add_argument('-n', '--game-pairs', type=int, default=10)
     parser.add_argument('-w', '--results-file', type=argparse.FileType('wb'))
     args = parser.parse_args()
+
+    if len(args.engine) == 1:
+        print('Warning: no games to play with only one engine')
 
     engines = []
     for engine_cmd in args.engine:
