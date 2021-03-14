@@ -18,7 +18,8 @@ draws = 0
 
 
 class Results:
-    def __init__(self, players, winner, loser, turns, time):
+    def __init__(self, intial_state, players, winner, loser, turns, time):
+        self.initial_state = initial_state
         self.players = players
         self.winner = winner
         self.loser = loser
@@ -117,12 +118,15 @@ def play_game(engine1, engine2, initial_state):
 
 def print_results():
     engine_wins = Counter()
+    engine_losses = Counter()
     engine_p1_wins = Counter()
     engine_p2_wins = Counter()
     player_wins = Counter()
+    engine_engine_wins = {}
     for result in results:
         engine_wins[result.winner] += 1
         engine_wins[result.loser] += 0
+        engine_losses[result.loser] += 1
 
         if result.winner == result.players[0]:
             engine_p1_wins[result.winner] += 1
@@ -131,13 +135,39 @@ def print_results():
 
         player_wins[result.players.index(result.winner) + 1] += 1
 
-    print('Wins\tP1\tP2\tTime\tEngine')
-    for engine, wins in engine_wins.most_common():
-        print(f'{wins}\t{engine_p1_wins[engine]}\t{engine_p2_wins[engine]}\t{mean(engine.times):.1f}s\t{engine}')
+        if result.winner not in engine_engine_wins:
+            engine_engine_wins[result.winner] = Counter()
+        engine_engine_wins[result.winner][result.loser] += 1
+        if result.loser not in engine_engine_wins:
+            engine_engine_wins[result.loser] = Counter()
 
-    print('\nWins\tPlayer')
-    for player, wins in player_wins.most_common():
-        print(f'{wins}\tPlayer {player}')
+    print('Wins\t(P1)\t(P2)\tLosses\tTime\tEngine')
+    for engine, wins in engine_wins.most_common():
+        print(
+            f'{wins}\t{engine_p1_wins[engine]}\t{engine_p2_wins[engine]}\t{engine_losses[engine]}\t{mean(engine.times):.1f}s\t{engine}')
+    print(f'\t{player_wins[1]}\t{player_wins[2]}')
+
+    print()
+    i = 0
+    matchup_lines = []
+    for engine, _ in engine_wins.most_common():
+        i += 1
+        stdout.write(f'({i: d})\t')
+
+        if engine not in engine_engine_wins:
+            matchup_lines.append('\n')
+            continue
+
+        matchup_line = ''
+        for matchup, _ in engine_wins.most_common():
+            wins = engine_engine_wins[engine].get(matchup, 0)
+            matchup_line += f' {wins: d}\t'
+
+        matchup_line += f'({i})\t{engine}'
+
+        matchup_lines.append(matchup_line)
+    print()
+    print('\n'.join(matchup_lines))
 
     print(f'\nDraws: {draws}')
 
