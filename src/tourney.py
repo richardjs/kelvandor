@@ -136,6 +136,7 @@ def print_results():
             state_p1_wins[result.initial_state] += 1
         else:
             engine_p2_wins[result.winner] += 1
+            state_p1_wins[result.initial_state] += 0
             state_p2_wins[result.initial_state] += 1
 
         player_wins[result.players.index(result.winner) + 1] += 1
