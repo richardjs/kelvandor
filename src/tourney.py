@@ -225,8 +225,8 @@ def main():
             print_results()
             print(f'{played_games}/{total_games}\t{percentage:.0f}%\tavg.game {mean_turns:.0f}t/{mean_time:.1f}s\t{elapsed} elapsed\t\tapprox. {etr} remaining')
 
-    if args.results_file:
-        pickle.dump(results, args.results_file)
+            if args.results_file:
+                pickle.dump(results, args.results_file)
 
 
 if __name__ == '__main__':
