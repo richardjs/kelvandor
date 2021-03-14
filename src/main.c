@@ -20,14 +20,16 @@ void printBanner(FILE* stream)
 }
 
 
-void printStart()
+void printStarts(int count)
 {
     struct State state;
-    State_randomStart(&state);
+    for (int i = 0; i < count; i++) {
+        State_randomStart(&state);
 
-    char stateString[STATE_STRING_SIZE];
-    State_toString(&state, stateString);
-    printf("%s\n", stateString);
+        char stateString[STATE_STRING_SIZE];
+        State_toString(&state, stateString);
+        printf("%s\n", stateString);
+    }
 }
 
 
@@ -36,7 +38,7 @@ void printUsage(char name[])
     fprintf(stderr, "Usage: %s [options] serialized board\n\
 Options:\n\
     -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
-    -g\t\t\tgenerate a starting state string\n\
+    -g count\t\tgenerate starting state strings\n\
     -i iterations\tnumber of MCTS iterations per action\n\
     -s\t\t\tsingle action mode\n\
     -v\t\t\tprint version information and exit\n", name);
@@ -50,7 +52,7 @@ int main(int argc, char *argv[])
     struct MCTSOptions options;
     MCTSOptions_default(&options);
     int opt;
-    while ((opt = getopt(argc, argv, "i:c:sgv")) != -1) {
+    while ((opt = getopt(argc, argv, "i:c:sg:v")) != -1) {
         switch (opt) {
             case 'i':
                 options.iterations = atoi(optarg);
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
                 options.multiaction = false;
                 break;
             case 'g':
-                printStart();
+                printStarts(atoi(optarg));
                 return 0;
             case 'v':
                 printBanner(stdout);
