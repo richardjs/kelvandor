@@ -3,7 +3,7 @@ import pickle
 import time
 from collections import Counter
 from datetime import timedelta
-from itertools import combinations
+from itertools import combinations, product
 from random import shuffle
 from statistics import mean
 from subprocess import Popen, PIPE
@@ -14,6 +14,7 @@ SAME_BOARD_DRAW = 20
 
 
 results = []
+draws = 0
 
 
 class Results:
@@ -95,6 +96,8 @@ def play_game(engine1, engine2, initial_state):
             same_board_turns += 1
             if same_board_turns > SAME_BOARD_DRAW:
                 print(f'\n{engine1} drew {engine2}. Playing again...')
+                global draws
+                draws += 1
                 return play_game(engine1, engine2, initial_state)
         else:
             board = state[:86]
@@ -128,6 +131,8 @@ def print_results():
     for player, wins in player_wins.most_common():
         print(f'{wins}\tPlayer {player}')
 
+    print(f'\nDraws: {draws}')
+
     print()
 
 
@@ -151,22 +156,22 @@ def main():
     played_games = 0
 
     matchups = list(combinations(engines, 2))
+    matchups = list(product(matchups, initial_states))
     shuffle(matchups)
-    for engine1, engine2 in matchups:
-        for initial_state in initial_states:
-            for p1, p2 in [(engine1, engine2), (engine2, engine1)]:
-                play_game(p1, p2, initial_state)
-                played_games += 1
+    for (engine1, engine2), initial_state in matchups:
+        for p1, p2 in [(engine1, engine2), (engine2, engine1)]:
+            play_game(p1, p2, initial_state)
+            played_games += 1
 
-                percentage = 100 * played_games / total_games
-                mean_turns = mean([result.turns for result in results])
-                mean_time = mean([result.time for result in results])
-                remaining_games = total_games - played_games
-                etr = timedelta(seconds=int(mean_time * remaining_games))
+            percentage = 100 * played_games / total_games
+            mean_turns = mean([result.turns for result in results])
+            mean_time = mean([result.time for result in results])
+            remaining_games = total_games - played_games
+            etr = timedelta(seconds=int(mean_time * remaining_games))
 
-                print()
-                print_results()
-                print(f'{played_games}/{total_games}\t{percentage:.0f}%\tavg.game {mean_turns:.0f}t/{mean_time:.1f}s\tapprox. {etr} remaining')
+            print()
+            print_results()
+            print(f'{played_games}/{total_games}\t{percentage:.0f}%\tavg.game {mean_turns:.0f}t/{mean_time:.1f}s\tapprox. {etr} remaining')
 
     if args.results_file:
         pickle.dump(results, args.results_file)
