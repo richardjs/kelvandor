@@ -198,6 +198,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--engine', action='append', required=True)
     parser.add_argument('-n', '--game-pairs', type=int, default=10)
+    parser.add_argument('-r', '--repeat-pairs', type=int, default=1)
     parser.add_argument('-w', '--results-file', type=argparse.FileType('wb'))
     args = parser.parse_args()
 
@@ -214,11 +215,11 @@ def main():
     for initial_state in stdout.split():
         initial_states.append(initial_state)
 
-    total_games = 2 * len(initial_states) * len(list(combinations(engines, 2)))
+    matchups = list(combinations(engines, 2))
+    matchups = list(product(matchups, initial_states * args.repeat_pairs))
+    total_games = 2 * len(matchups)
     played_games = 0
 
-    matchups = list(combinations(engines, 2))
-    matchups = list(product(matchups, initial_states))
     shuffle(matchups)
     start_time = time.perf_counter()
     for ((engine1, engine2), initial_state) in matchups:
