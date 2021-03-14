@@ -124,6 +124,8 @@ def print_results():
     engine_p2_wins = Counter()
     player_wins = Counter()
     engine_engine_wins = {}
+    engine_engine_p1_wins = {}
+    engine_engine_p2_wins = {}
     state_p1_wins = Counter()
     state_p2_wins = Counter()
     for result in results:
@@ -131,21 +133,28 @@ def print_results():
         engine_wins[result.loser] += 0
         engine_losses[result.loser] += 1
 
+        if result.winner not in engine_engine_wins:
+            engine_engine_wins[result.winner] = Counter()
+            engine_engine_p1_wins[result.winner] = Counter()
+            engine_engine_p2_wins[result.winner] = Counter()
+        engine_engine_wins[result.winner][result.loser] += 1
+
+        if result.loser not in engine_engine_wins:
+            engine_engine_wins[result.loser] = Counter()
+            engine_engine_p1_wins[result.loser] = Counter()
+            engine_engine_p2_wins[result.loser] = Counter()
+
         if result.winner == result.players[0]:
             engine_p1_wins[result.winner] += 1
+            engine_engine_p1_wins[result.winner][result.loser] += 1
             state_p1_wins[result.initial_state] += 1
         else:
             engine_p2_wins[result.winner] += 1
+            engine_engine_p2_wins[result.winner][result.loser] += 1
             state_p1_wins[result.initial_state] += 0
             state_p2_wins[result.initial_state] += 1
 
         player_wins[result.players.index(result.winner) + 1] += 1
-
-        if result.winner not in engine_engine_wins:
-            engine_engine_wins[result.winner] = Counter()
-        engine_engine_wins[result.winner][result.loser] += 1
-        if result.loser not in engine_engine_wins:
-            engine_engine_wins[result.loser] = Counter()
 
     print('Wins\t(P1)\t(P2)\tLosses\tTime\tEngine')
     for engine, wins in engine_wins.most_common():
@@ -158,7 +167,7 @@ def print_results():
     matchup_lines = []
     for engine, _ in engine_wins.most_common():
         i += 1
-        stdout.write(f'({i: d})\t')
+        stdout.write(f'({i: d})\t\t')
 
         if engine not in engine_engine_wins:
             matchup_lines.append('\n')
@@ -167,7 +176,10 @@ def print_results():
         matchup_line = ''
         for matchup, _ in engine_wins.most_common():
             wins = engine_engine_wins[engine].get(matchup, 0)
+            p1_wins = engine_engine_p1_wins[engine].get(matchup, 0)
+            p2_wins = engine_engine_p2_wins[engine].get(matchup, 0)
             matchup_line += f' {wins: d}\t'
+            matchup_line += f'{p1_wins}/{p2_wins}\t'
 
         matchup_line += f'({i})\t{engine}'
 
