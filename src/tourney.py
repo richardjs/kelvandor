@@ -18,7 +18,7 @@ draws = 0
 
 
 class Results:
-    def __init__(self, intial_state, players, winner, loser, turns, time):
+    def __init__(self, initial_state, players, winner, loser, turns, time):
         self.initial_state = initial_state
         self.players = players
         self.winner = winner
@@ -106,6 +106,7 @@ def play_game(engine1, engine2, initial_state):
 
         if winner:
             results.append(Results(
+                initial_state=initial_state,
                 players=[engine1, engine2],
                 winner=engine,
                 loser=engines[0],
@@ -123,6 +124,8 @@ def print_results():
     engine_p2_wins = Counter()
     player_wins = Counter()
     engine_engine_wins = {}
+    state_p1_wins = Counter()
+    state_p2_wins = Counter()
     for result in results:
         engine_wins[result.winner] += 1
         engine_wins[result.loser] += 0
@@ -130,8 +133,10 @@ def print_results():
 
         if result.winner == result.players[0]:
             engine_p1_wins[result.winner] += 1
+            state_p1_wins[result.initial_state] += 1
         else:
             engine_p2_wins[result.winner] += 1
+            state_p2_wins[result.initial_state] += 1
 
         player_wins[result.players.index(result.winner) + 1] += 1
 
@@ -169,9 +174,11 @@ def print_results():
     print()
     print('\n'.join(matchup_lines))
 
-    print(f'\nDraws: {draws}')
+    print('\nP1\tP2\tState')
+    for state, _ in state_p1_wins.most_common():
+        print(f'{state_p1_wins[state]}\t{state_p2_wins[state]}\t{state}')
 
-    print()
+    print(f'\nDraws: {draws}\n')
 
 
 def main():
@@ -189,8 +196,9 @@ def main():
         engines.append(Engine(engine_cmd))
 
     initial_states = []
-    for _ in range(args.game_pairs):
-        initial_state, _ = engines[0].run('-g')
+
+    stdout, _ = engines[0].run(f'-g {args.game_pairs}')
+    for initial_state in stdout.split():
         initial_states.append(initial_state)
 
     total_games = 2 * len(initial_states) * len(list(combinations(engines, 2)))
@@ -199,7 +207,7 @@ def main():
     matchups = list(combinations(engines, 2))
     matchups = list(product(matchups, initial_states))
     shuffle(matchups)
-    for (engine1, engine2), initial_state in matchups:
+    for ((engine1, engine2), initial_state) in matchups:
         for p1, p2 in [(engine1, engine2), (engine2, engine1)]:
             play_game(p1, p2, initial_state)
             played_games += 1
