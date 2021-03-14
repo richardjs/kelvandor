@@ -208,6 +208,7 @@ def main():
     matchups = list(combinations(engines, 2))
     matchups = list(product(matchups, initial_states))
     shuffle(matchups)
+    start_time = time.perf_counter()
     for ((engine1, engine2), initial_state) in matchups:
         for p1, p2 in [(engine1, engine2), (engine2, engine1)]:
             play_game(p1, p2, initial_state)
@@ -217,11 +218,12 @@ def main():
             mean_turns = mean([result.turns for result in results])
             mean_time = mean([result.time for result in results])
             remaining_games = total_games - played_games
+            elapsed = timedelta(seconds=int(time.perf_counter() - start_time))
             etr = timedelta(seconds=int(mean_time * remaining_games))
 
             print()
             print_results()
-            print(f'{played_games}/{total_games}\t{percentage:.0f}%\tavg.game {mean_turns:.0f}t/{mean_time:.1f}s\tapprox. {etr} remaining')
+            print(f'{played_games}/{total_games}\t{percentage:.0f}%\tavg.game {mean_turns:.0f}t/{mean_time:.1f}s\t{elapsed} elapsed\t\tapprox. {etr} remaining')
 
     if args.results_file:
         pickle.dump(results, args.results_file)
