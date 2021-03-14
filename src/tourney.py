@@ -117,15 +117,23 @@ def play_game(engine1, engine2, initial_state):
 
 def print_results():
     engine_wins = Counter()
+    engine_p1_wins = Counter()
+    engine_p2_wins = Counter()
     player_wins = Counter()
     for result in results:
         engine_wins[result.winner] += 1
         engine_wins[result.loser] += 0
+
+        if result.winner == result.players[0]:
+            engine_p1_wins[result.winner] += 1
+        else:
+            engine_p2_wins[result.winner] += 1
+
         player_wins[result.players.index(result.winner) + 1] += 1
 
-    print('Wins\tTime\tEngine')
+    print('Wins\tP1\tP2\tTime\tEngine')
     for engine, wins in engine_wins.most_common():
-        print(f'{wins}\t{mean(engine.times):.1f}s\t{engine}')
+        print(f'{wins}\t{engine_p1_wins[engine]}\t{engine_p2_wins[engine]}\t{mean(engine.times):.1f}s\t{engine}')
 
     print('\nWins\tPlayer')
     for player, wins in player_wins.most_common():
