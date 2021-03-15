@@ -128,6 +128,10 @@ def print_results():
     engine_engine_p2_wins = {}
     state_p1_wins = Counter()
     state_p2_wins = Counter()
+    state_engine_p1_wins = {}
+    state_engine_p2_wins = {}
+    state_engine_p1_losses = {}
+    state_engine_p2_losses = {}
     for result in results:
         engine_wins[result.winner] += 1
         engine_wins[result.loser] += 0
@@ -144,15 +148,32 @@ def print_results():
             engine_engine_p1_wins[result.loser] = Counter()
             engine_engine_p2_wins[result.loser] = Counter()
 
+        if result.initial_state not in state_engine_p1_wins:
+            state_engine_p1_wins[result.initial_state] = Counter()
+            state_engine_p2_wins[result.initial_state] = Counter()
+            state_engine_p1_losses[result.initial_state] = Counter()
+            state_engine_p2_losses[result.initial_state] = Counter()
+
         if result.winner == result.players[0]:
             engine_p1_wins[result.winner] += 1
             engine_engine_p1_wins[result.winner][result.loser] += 1
             state_p1_wins[result.initial_state] += 1
+
+            state_engine_p1_wins[result.initial_state][result.winner] += 1
+            state_engine_p1_wins[result.initial_state][result.loser] += 0
+            state_engine_p2_losses[result.initial_state][result.loser] += 1
+            state_engine_p2_losses[result.initial_state][result.winner] += 0
+
         else:
             engine_p2_wins[result.winner] += 1
             engine_engine_p2_wins[result.winner][result.loser] += 1
             state_p1_wins[result.initial_state] += 0
             state_p2_wins[result.initial_state] += 1
+
+            state_engine_p2_wins[result.initial_state][result.winner] += 1
+            state_engine_p2_wins[result.initial_state][result.loser] += 0
+            state_engine_p1_losses[result.initial_state][result.loser] += 1
+            state_engine_p1_losses[result.initial_state][result.winner] += 0
 
         player_wins[result.players.index(result.winner) + 1] += 1
 
@@ -190,6 +211,15 @@ def print_results():
     print('\nP1\tP2\tState')
     for state, _ in state_p1_wins.most_common():
         print(f'{state_p1_wins[state]}\t{state_p2_wins[state]}\t{state}')
+
+        stdout.write(f'\t')
+        i = -1
+        for engine, _ in engine_wins.most_common():
+            i += 1
+            stdout.write(f'\t({i}) {state_engine_p1_wins[state][engine]}/{state_engine_p2_wins[state][engine]}')
+            stdout.write(f':{state_engine_p1_losses[state][engine]}/{state_engine_p2_losses[state][engine]}')
+
+        print()
 
     print(f'\nDraws: {draws}\n')
 
