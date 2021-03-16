@@ -7,9 +7,9 @@
 #include <sys/time.h>
 
 
-#define DEFAULT_ITERATIONS 150000
+#define DEFAULT_ITERATIONS 100000
 #define DEFAULT_MAX_SIM_DEPTH 500
-#define DEFAULT_UCTC 2
+#define DEFAULT_UCTC 1
 #define DEFAULT_MULTIACTION true
 #define DEFAULT_SAVE_TREE false
 
