@@ -180,9 +180,8 @@ export class Board {
 			s+=2;
 		}
 		
-		
 		//Nodes
-		// nodeCount will be used to determine the phase
+		// nodeCount will be used with roadCount to determine start phase
 		var nodeCount = 0;
 		for (var i = 0; i < constants.COUNT_NODES; i++) {
 			var side = constants.KBN_TO_SIDES[boardStr[s]];
@@ -196,14 +195,30 @@ export class Board {
 		}
 		
 		//Roads
+		// roadCount will be used with nodeCount to determine start phase
+		var roadCount = 0;
 		for (var i = 0; i < constants.COUNT_ROADS; i++) {			
 			var side = constants.KBN_TO_SIDES[boardStr[s]];
 			var orientation = ORIENTATIONS[board.roads.length];
 			var road = new Road(side, orientation);
 			board.roads.push(road);
-						
 			s++;
+
+			if (side != constants.SIDE_NONE) {
+				roadCount++;
+			}
 		}				
+
+		// Check for exhausted tiles
+		for (var nid = 0; nid < constants.COUNT_NODES; nid++) {
+			board.updateExhausted(nid);
+		}
+
+		//Check for captured tiles
+		for (var tid = 0; tid < constants.COUNT_TILES; tid++) {
+			board.updateCapture(tid, constants.SIDE_1);
+			board.updateCapture(tid, constants.SIDE_2);
+		}
 		
 		//Turn 
 		board.turn = constants.KBN_TO_SIDES[boardStr[s]];		
@@ -223,25 +238,44 @@ export class Board {
 		
 		//Traded Status
 		var tradedStatus = boardStr[s];
-		board.hasAlreadyTraded = tradedStatus? true : false;
+		board.hasAlreadyTraded = tradedStatus == '1' ? true : false;
 		s++;
 
 		//Phase		
-		if (nodeCount == 0) {
-			board.phase == constants.PHASE_PLACE1_1;
-			board.res = [[4,4,2,2],[4,4,2,2]];
-		} else if (nodeCount == 1) {
-			board.phase == constants.PHASE_PLACE2_1;
-			board.res = [[2,2,1,1],[4,4,2,2]];
-		} else if (nodeCount == 2) {
-			board.phase == constants.PHASE_PLACE2_2;
-			board.res = [[2,2,1,1],[2,2,1,1]];
-		} else if (nodeCount == 3) {
-			board.phase == constants.PHASE_PLACE1_2;
-			board.res = [[2,2,1,1],[0,0,0,0]];
+		// We're deriving our resources for place phases instead of
+		// using the string, because there's a descrepency is how
+		// engines represent resources during the start place; to avoid
+		// issues from that, we'll just calculate it from scratch
+		if (roadCount == 0) {
+			board.phase = constants.PHASE_PLACE1_1;
+			if (roadCount == nodeCount) {
+				board.res = [[4,4,2,2],[4,4,2,2]];
+			} else {
+				board.res = [[2,2,2,2],[4,4,2,2]];
+			}
+		} else if (roadCount == 1) {
+			board.phase = constants.PHASE_PLACE2_1;
+			if (roadCount == nodeCount) {
+				board.res = [[2,2,1,1],[4,4,2,2]];
+			} else {
+				board.res = [[2,2,1,1],[2,2,2,2]];
+			}
+		} else if (roadCount == 2) {
+			board.phase = constants.PHASE_PLACE2_2;
+			if (roadCount == nodeCount) {
+				board.res = [[2,2,1,1],[2,2,1,1]];
+			} else {
+				board.res = [[2,2,1,1],[0,0,1,1]];
+			}
+		} else if (roadCount == 3) {
+			board.phase = constants.PHASE_PLACE1_2;
+			if (roadCount == nodeCount) {
+				board.res = [[2,2,1,1],[0,0,0,0]];
+			} else {
+				board.res = [[0,0,1,1],[0,0,0,0]];
+			}
 		} else {
-			board.phase = PHASE_PLAY;
-			board.res = [[0,0,0,0],[0,0,0,0]];
+			board.phase = constants.PHASE_PLAY;
 		}
 
 		board.calcScores();		
@@ -271,8 +305,10 @@ export class Board {
 		var resStr1 = '';		
 		var resStr2 = '';
 		for (var i = 0; i < constants.COUNT_RES; i++) {
-			resStr1 += this.res[constants.SIDE_1][i].toString(BASE_RES).padStart(2, '0');			
-			resStr2 += this.res[constants.SIDE_2][i].toString(BASE_RES).padStart(2, '0');			
+			resStr1 += this.res[constants.SIDE_1][i].toString(BASE_RES).padStart(2, '0');
+		}
+		for (var i = 0; i < constants.COUNT_RES; i++) {
+			resStr1 += this.res[constants.SIDE_2][i].toString(BASE_RES).padStart(2, '0');
 		}
 
 		//Already traded
@@ -429,8 +465,16 @@ export class Board {
 		this.res[side][constants.RES_YELLOW]-=2;
 		this.nodes[nid].side = side;
 		
+		this.updateExhausted(nid);
+	}
 
-		//Exhaust tiles
+	buyRoad = (side, rid) => {
+		this.res[side][constants.RES_BLUE]--;
+		this.res[side][constants.RES_RED]--;
+		this.roads[rid].side = side;
+	}
+
+	updateExhausted = (nid) => {
 		var tids = adj.TILES_ADJ_NODE[nid];		
 		for (var t = 0; t < tids.length; t++) {
 			var tid = tids[t];			
@@ -439,15 +483,7 @@ export class Board {
 			else if (tile.color == constants.RES_VACANT) continue;			
 			var nodeCount = this.countNodesOnTile(tid);			
 			if (nodeCount > tile.value) this.tiles[tid].isExhausted = true;
-			
 		}
-	}
-
-	buyRoad = (side, rid) => {
-		this.res[side][constants.RES_BLUE]--;
-		this.res[side][constants.RES_RED]--;
-		this.roads[rid].side = side;
-		
 	}
 	
 	changeTurn = (clearLast) => {
@@ -508,7 +544,7 @@ export class Board {
 			for (var r = 0; r < rids.length; r++) {
 				var rid = rids[r];
 
-				if (this.roads[rid].side == this.turn) {
+				if (this.roads[rid].side == side) {
 				}
 				else if (this.roads[rid].side == constants.SIDE_NONE) {
 					var tids = adj.TILES_ADJ_ROAD[rid];
@@ -533,7 +569,7 @@ export class Board {
 
 		if(capture) {
 			for (var i = 0; i < crumbs.length; i++) {
-				this.tiles[crumbs[i]].captured = this.turn;
+				this.tiles[crumbs[i]].captured = side;
 				this.tiles[crumbs[i]].isExhausted = false; //Un-exhaust if captured
 			}
 		}
