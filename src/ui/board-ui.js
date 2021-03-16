@@ -24,13 +24,13 @@ export class BoardUI extends Component {
 		super();		
 		//lblStatus.innerHTML = 'test';
 		document.addEventListener('keydown', this.onKeyDown);
-		document.addEventListener('contextmenu', this.onRightClick);		    
+		document.addEventListener('contextmenu', this.onRightClick);			
 		
 		this.board = Board.fromString(DEFAULT_BOARD_STATE);
 		//this.board = new Board();
 		//this.board.defaultSetup();		
-		this.stateHistory = [this.board.toString()];
-		this.stateRedo = [];				
+		this.history = [this.board.toString()];
+		this.historyIndex = 0;
 	}
 		
 	
@@ -72,78 +72,30 @@ export class BoardUI extends Component {
 			this.forceUpdate();
 		}
 	
-		if (e.key == 'ArrowLeft' || (e.key == 'z' && e.ctrlKey)) { //Undo
-			
-			if (this.stateHistory.length > 1) {				
-				if (!this.stateRedo.length) this.stateRedo.push(this.stateHistory.pop());				
-				var prev = this.stateHistory.pop();
-				this.stateRedo.push(prev);
-				
-				this.board = Board.fromString(prev);
-				this.forceUpdate();
-			}
+		if (e.key == 'ArrowLeft' || (e.key == 'z' && e.ctrlKey)) { //undo
+			this.undo();
 		}
 		else if (e.key == 'ArrowRight' || (e.key == 'y' && e.ctrlKey)) { //redo
-			if (this.stateRedo.length) {
-				var next = this.stateRedo.pop();
-				if (next == this.board.toString()) next = this.stateRedo.pop();
-				this.stateHistory.push(next);
-				this.board = Board.fromString(next);
-				this.forceUpdate();
-			}
+			this.redo();
 		}		
-
-	
-
 	}
 	
 	onRightClick = (e) => {
 		e.preventDefault();
 	}
 
-	
+
 	onShuffle = (e) => {
 		this.board.reset();
 		this.board.shuffle();
 		this.forceUpdate();
+		this.recordState();
 	}
 
 	onReset = (e) => {
-		this.stateHistory = [];
-		this.stateRedo = [];
 		this.board.reset();
 		this.forceUpdate();
-	}
-
-    loadString = (e) => {
-        var string = prompt('Enter string');
-        if (string == null || string.length == 0) return;
-
-        this.board = Board.fromString(string);
-        this.forceUpdate();
-    }
-
-	playRandom = (e) => {	
-		var btnDone = document.getElementById('btnDone');
-		var btnPlayRandom = document.getElementById('btnPlayRandom');
-		if (btnDone) {
-			btnDone.disabled = true;
-		}
-		btnPlayRandom.disabled = true;
-
-		var self = this;
-		networkPlayer.getMove(this.board.toString(), function(actions) {
-			var actionResult = self.board.playActions(actions);
-			if (actionResult.msg) {
-				console.log(actionResult.msg);
-				self.recordState();
-			}
-			self.flashMsg(actionResult.msg);
-			
-			if (btnDone) btnDone.disabled = false;							
-			btnPlayRandom.disabled = false;
-		});
-
+		this.recordState();
 	}
 
 	//onHarvest = (e) => {
@@ -159,8 +111,6 @@ export class BoardUI extends Component {
 		}
 		this.flashMsg(action.msg);
 	}
-	
-	
 
 	onTrade = (tradeResids) => {
 		var action = this.board.trade(tradeResids);
@@ -168,11 +118,71 @@ export class BoardUI extends Component {
 		this.flashMsg(action.msg);
 	}
 
+
+	playRandom = (e) => {	
+		var btnDone = document.getElementById('btnDone');
+		var btnPlayRandom = document.getElementById('btnPlayRandom');
+		if (btnDone) {
+			btnDone.disabled = true;
+		}
+		btnPlayRandom.disabled = true;
+
+		var self = this;
+		networkPlayer.getMove(this.board.toString(), function(actions) {
+			var actionResult = self.board.playActions(actions);
+			self.recordState();
+			
+			if (actionResult.msg) {
+				console.log(actionResult.msg);
+			}
+			self.flashMsg(actionResult.msg);
+			
+			if (btnDone) btnDone.disabled = false;							
+			btnPlayRandom.disabled = false;
+		});
+	}
+
+	loadString = (e) => {
+		var string = prompt('Enter string');
+		if (string == null || string.length == 0) return;
+
+		this.board = Board.fromString(string);
+		this.forceUpdate();
+
+		this.recordState()
+	}
+
+
 	recordState = () => {
 		var boardStr = this.board.toString();
 		//window.location.hash = boardStr;
-		this.stateHistory.push(boardStr);
+		this.history = this.history.slice(0, this.historyIndex + 1);
+		this.history.push(boardStr);
+		this.historyIndex++;
+
+		// Debugging check
+		if (this.board.toString() != Board.fromString(this.board.toString()).toString()) {
+			console.log('Warning: serialization and deserialization results in a different board string!');
+			console.log(this.board.toString())
+			console.log(Board.fromString(boardStr).toString());
+		}
 	}
+
+	undo = () => {
+		if (this.historyIndex > 0) {
+			this.board = Board.fromString(this.history[--this.historyIndex]);
+			this.forceUpdate();
+		}
+	}
+
+	redo = () => {
+		if (this.historyIndex < this.history.length - 1) {
+			var next = this.history[++this.historyIndex];
+			this.board = Board.fromString(next);
+			this.forceUpdate();
+		}
+	}
+
 
 	flashMsg = (msg) => {
 		this.setState({msg:msg});
