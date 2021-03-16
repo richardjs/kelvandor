@@ -177,13 +177,6 @@ def print_results():
 
         player_wins[result.players.index(result.winner) + 1] += 1
 
-    print('Wins\tP1:P2\tLosses\tTime\tEngine')
-    for engine, wins in engine_wins.most_common():
-        print(
-            f'{wins}\t{engine_p1_wins[engine]}:{engine_p2_wins[engine]}\t{engine_losses[engine]}\t{mean(engine.times):.1f}s\t{engine}')
-    print(f'\t{player_wins[1]}:{player_wins[2]}')
-
-    print()
     i = 0
     matchup_lines = []
     for engine, _ in engine_wins.most_common():
@@ -220,6 +213,12 @@ def print_results():
             stdout.write(f'/{state_engine_p1_losses[state][engine]}:{state_engine_p2_losses[state][engine]}')
 
         print()
+
+    print('\nWins\tP1:P2\tLosses\tTime\tEngine')
+    for engine, wins in engine_wins.most_common():
+        print(
+            f'{wins}\t{engine_p1_wins[engine]}:{engine_p2_wins[engine]}\t{engine_losses[engine]}\t{mean(engine.times):.1f}s\t{engine}')
+    print(f'\t{player_wins[1]}:{player_wins[2]}')
 
     print(f'\nDraws: {draws}\n')
 
