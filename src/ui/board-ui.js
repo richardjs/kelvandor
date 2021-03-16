@@ -115,6 +115,14 @@ export class BoardUI extends Component {
 		this.forceUpdate();
 	}
 
+    loadString = (e) => {
+        var string = prompt('Enter string');
+        if (string == null || string.length == 0) return;
+
+        this.board = Board.fromString(string);
+        this.forceUpdate();
+    }
+
 	playRandom = (e) => {	
 		var btnDone = document.getElementById('btnDone');
 		var btnPlayRandom = document.getElementById('btnPlayRandom');
@@ -263,6 +271,7 @@ export class BoardUI extends Component {
 				<div id="panel">				
 					<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button> <br/>
 					<button id="btnShuffle" onclick=${this.onReset}>Reset</button> <br/>
+					<button id="btnLoadString" onclick=${this.loadString}>Load String</button> <br/>
 					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button>
 				</div>
 				${this.renderDone()}

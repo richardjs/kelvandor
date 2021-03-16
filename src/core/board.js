@@ -182,11 +182,17 @@ export class Board {
 		
 		
 		//Nodes
+		// nodeCount will be used to determine the phase
+		var nodeCount = 0;
 		for (var i = 0; i < constants.COUNT_NODES; i++) {
 			var side = constants.KBN_TO_SIDES[boardStr[s]];
 			var node = new Node(side);
 			board.nodes.push(node);					
 			s++;
+
+			if (side != constants.SIDE_NONE) {
+				nodeCount++;
+			}
 		}
 		
 		//Roads
@@ -221,7 +227,22 @@ export class Board {
 		s++;
 
 		//Phase		
-		board.phase = Number.parseInt(boardStr[s]);		
+		if (nodeCount == 0) {
+			board.phase == constants.PHASE_PLACE1_1;
+			board.res = [[4,4,2,2],[4,4,2,2]];
+		} else if (nodeCount == 1) {
+			board.phase == constants.PHASE_PLACE2_1;
+			board.res = [[2,2,1,1],[4,4,2,2]];
+		} else if (nodeCount == 2) {
+			board.phase == constants.PHASE_PLACE2_2;
+			board.res = [[2,2,1,1],[2,2,1,1]];
+		} else if (nodeCount == 3) {
+			board.phase == constants.PHASE_PLACE1_2;
+			board.res = [[2,2,1,1],[0,0,0,0]];
+		} else {
+			board.phase = PHASE_PLAY;
+			board.res = [[0,0,0,0],[0,0,0,0]];
+		}
 
 		board.calcScores();		
 		return board;
