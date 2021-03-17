@@ -1,12 +1,21 @@
 from subprocess import Popen, PIPE
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response
 
 
 KELVANDOR = './kelvandor'
 
 
 app = Flask(__name__)
+
+
+@app.route('/<board>', methods=['OPTIONS'])
+def options(board):
+    response = Response()
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Iterations'
+
+    return response
 
 
 @app.route('/<board>')
@@ -29,5 +38,7 @@ def think(board):
         'log': log,
     })
 
-    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Iterations'
+
     return response
