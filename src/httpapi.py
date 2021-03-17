@@ -4,6 +4,8 @@ from flask import Flask, jsonify, request, Response
 
 
 KELVANDOR = './kelvandor'
+MAX_ITERATIONS = 300000
+MIN_ITERATIONS = 100
 
 
 app = Flask(__name__)
@@ -25,7 +27,10 @@ def think(board):
     args = []
     if 'Iterations' in request.headers:
         try:
-            args += ['-i', str(int(request.headers['Iterations']))]
+            args += ['-i', str(
+                max(min(int(request.headers['Iterations']),
+                        MAX_ITERATIONS), MIN_ITERATIONS)
+            )]
         except ValueError:
             pass
 
