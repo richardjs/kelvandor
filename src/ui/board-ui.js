@@ -289,7 +289,7 @@ export class BoardUI extends Component {
 					<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button> <br/>
 					<button id="btnShuffle" onclick=${this.onReset}>Reset</button> <br/>
 					<button id="btnLoadString" onclick=${this.loadString}>Load String</button> <br/>
-					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button>
+					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button> <br/>
 					<button id="btnSetIterations" onclick=${this.setIterations}>Set Iterations</button>
 				</div>
 				${this.renderDone()}
