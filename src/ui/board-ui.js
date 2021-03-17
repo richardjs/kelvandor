@@ -31,6 +31,8 @@ export class BoardUI extends Component {
 		//this.board.defaultSetup();		
 		this.history = [this.board.toString()];
 		this.historyIndex = 0;
+
+		this.kelvandorIterations = 10000;
 	}
 		
 	
@@ -128,7 +130,7 @@ export class BoardUI extends Component {
 		btnPlayRandom.disabled = true;
 
 		var self = this;
-		networkPlayer.getMove(this.board.toString(), function(actions) {
+		networkPlayer.getMove(this.board.toString(), this.kelvandorIterations, function(actions) {
 			var actionResult = self.board.playActions(actions);
 			self.recordState();
 			
@@ -141,6 +143,11 @@ export class BoardUI extends Component {
 			btnPlayRandom.disabled = false;
 		});
 	}
+
+	setIterations = (e) => {
+		this.kelvandorIterations = prompt('Enter iterations', this.kelvandorIterations);
+	}
+
 
 	loadString = (e) => {
 		var string = prompt('Enter string');
@@ -283,6 +290,7 @@ export class BoardUI extends Component {
 					<button id="btnShuffle" onclick=${this.onReset}>Reset</button> <br/>
 					<button id="btnLoadString" onclick=${this.loadString}>Load String</button> <br/>
 					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button>
+					<button id="btnSetIterations" onclick=${this.setIterations}>Set Iterations</button>
 				</div>
 				${this.renderDone()}
 				
