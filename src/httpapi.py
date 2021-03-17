@@ -1,6 +1,6 @@
 from subprocess import Popen, PIPE
 
-from flask import Flask, jsonify, Response
+from flask import Flask, jsonify, request, Response
 
 
 KELVANDOR = './kelvandor'
@@ -22,7 +22,14 @@ def options(board):
 def think(board):
     assert board.isalnum()
 
-    p = Popen((KELVANDOR, board), stdout=PIPE, stderr=PIPE)
+    args = []
+    if 'Iterations' in request.headers:
+        try:
+            args += ['-i', str(int(request.headers['Iterations']))]
+        except ValueError:
+            pass
+
+    p = Popen([KELVANDOR, board] + args, stdout=PIPE, stderr=PIPE)
 
     actions = []
     for action in p.stdout.readlines():
