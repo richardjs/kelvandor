@@ -7,7 +7,7 @@ const OFFSET_NODE = 50;
 export class NodeUI extends Component {
 	
 	onClick = (e) => {
-		this.props.click(this.props.nid);	
+		this.props.click(e, this.props.nid);	
 	}
 	
 	render() {

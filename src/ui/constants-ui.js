@@ -11,7 +11,7 @@ export const SIZE_TRADE_W = 100;
 export const SIZE_TRADE_H = 50;
 
 
-export const UNIT_TILE = SIZE_TILE/2;
+export const UNIT_TILE = SIZE_TILE/2; //More margin can be added, which adds a nice gutter, but also creates a bit of an optical illusion that makes it hard to look at
 export const UNIT_NODE = SIZE_TILE/2;
 export const UNIT_ROAD = SIZE_TILE/2;
 export const UNIT_TRADE = SIZE_TRADE_W+10;

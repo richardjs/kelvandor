@@ -18,7 +18,7 @@ export class ResUI extends Component {
 	componentDidMount = () => {						
 	}
 	
-	onTrade = (targetResid) => {		
+	onTrade = (e, targetResid) => {		
 		var tradeResids = [];
 		var dots = this.state.dots;		
 		for (var resid = 0; resid < dots.length; resid++) {
@@ -27,9 +27,12 @@ export class ResUI extends Component {
 				tradeResids.push(resid);
 			}
 		}
-		if (tradeResids.length == 3) {
+		if (e.ctrlKey) {
+			this.props.onTrade(e, [0,0,0,targetResid]);
+		}
+		else if (tradeResids.length == 3) {
 			tradeResids.push(targetResid);			
-			this.props.onTrade(tradeResids);
+			this.props.onTrade(e, tradeResids);
 			this.setState({dots:[0,0,0,0]});
 		}
 

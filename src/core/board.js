@@ -85,7 +85,7 @@ export class Board {
 		this.init();
 	}
 	
-	init = () => {
+	init = () => {		
 		this.turn = constants.SIDE_1;
 		this.phase = constants.PHASE_PLACE1_1;// PHASE_PLAY;		
 		this.tiles = [];
@@ -96,6 +96,8 @@ export class Board {
 		this.hasAlreadyTraded = false;	
 		this.lastNids = [];
 		this.lastRids = [];	
+		this.longestRids = [];
+		this.scoreBreakDowns = [{nodes:0,captured:0,longest:0},{nodes:0,captured:0,longest:0}]
 	}
 	
 	//TODO: This is just scaffolding - deprecate in favor of loading state string
@@ -327,8 +329,15 @@ export class Board {
 		).toLowerCase();
 	}
 	
-	addNode = (nid) => {		
+	addNode = (nid, override) => {				
 		var side = this.turn;		
+		if (override) {
+			//Add node
+			this.nodes[nid].side = side;
+				
+			return {status:true, msg:'Node added...'};
+		}
+
 		if (!nidInBounds(nid)) return {status:false, msg:'Node out of bounds:' + nid + '...'};
 		else if (this.nodes[nid].side != constants.SIDE_NONE) return {status:false, msg:'There is already a node there...'};
 		
@@ -384,8 +393,19 @@ export class Board {
 		return {status:true, msg:'Node added...'};
 	}
 	
-	addRoad = (rid) => {		
+	addRoad = (rid, override) => {		
 		var side = this.turn;
+		if (override) {
+			this.roads[rid].side = side;
+
+			//Check for capture
+			var tids = adj.TILES_ADJ_ROAD[rid];
+			for (var t = 0; t < tids.length; t++) {
+				this.updateCapture(tids[t], this.turn);
+			}
+
+			return {status:true, msg:'Road added'};
+		}
 
 		if (!ridInBounds(rid)) return {status: false, msg:'Road ' + rid + ' is out of bounds...'};
 		else if (this.roads[rid].side != constants.SIDE_NONE) return {status: false, msg: 'There is already a road there...'};
@@ -450,13 +470,6 @@ export class Board {
 		//Add road
 		this.buyRoad(side, rid);
 
-
-		//Check for capture
-		var tids = adj.TILES_ADJ_ROAD[rid];
-		for (var t = 0; t < tids.length; t++) {
-			this.updateCapture(tids[t], this.turn);
-		}
-
 		return {status:true, msg:'Road added'};
 	}
 
@@ -472,6 +485,12 @@ export class Board {
 		this.res[side][constants.RES_BLUE]--;
 		this.res[side][constants.RES_RED]--;
 		this.roads[rid].side = side;
+
+		//Check for capture
+		var tids = adj.TILES_ADJ_ROAD[rid];
+		for (var t = 0; t < tids.length; t++) {
+			this.updateCapture(tids[t], this.turn);
+		}
 	}
 
 	updateExhausted = (nid) => {
@@ -496,6 +515,7 @@ export class Board {
 		this.calcScores();		
 		if (this.isGameOver()) {
 			alert('Game Over!');
+			this.phase = constants.PHASE_GAME_OVER;
 			return {status:false, msg:'Game Over!'};
 		}
 		
@@ -598,14 +618,22 @@ export class Board {
 	
 	
 	calcScores = () => {
-		var roadLen1 = this.calcLongestRoad(constants.SIDE_1);
-		var roadLen2 = this.calcLongestRoad(constants.SIDE_2);
+		var roadInfo1 = this.calcLongestRoad(constants.SIDE_1);
+		var roadInfo2 = this.calcLongestRoad(constants.SIDE_2);
 
-		var longestRoad;
-		if (roadLen1 > roadLen2) longestRoad = constants.SIDE_1;
-		else if (roadLen1 < roadLen2) longestRoad = constants.SIDE_2;
-		else longestRoad = constants.SIDE_NONE;
-
+		var longestRoad;		
+		if (roadInfo1.maxLength > roadInfo2.maxLength) {
+			longestRoad = constants.SIDE_1;
+			this.longestRids = roadInfo1.longestRids;
+		}
+		else if (roadInfo1.maxLength < roadInfo2.maxLength) {
+			longestRoad = constants.SIDE_2;
+			this.longestRids = roadInfo2.longestRids;
+		}
+		else {
+			longestRoad = constants.SIDE_NONE;		
+			this.longestRids = [];		
+		}
 
 		this.calcScore(constants.SIDE_1, longestRoad);
 		this.calcScore(constants.SIDE_2, longestRoad);
@@ -618,28 +646,44 @@ export class Board {
 			var node = this.nodes[nid];
 			if (node.side == side) score++;
 		}
+		this.scoreBreakDowns[side].nodes = score;
 		
 		//+1 each captured tile
+		var capturedScore = 0;
 		for (var tid = 0; tid < constants.COUNT_TILES; tid++) {
 			var tile = this.tiles[tid];
-			if (tile.captured == side) score++;
+			if (tile.captured == side) capturedScore++;
 		}
+		score += capturedScore;
+		this.scoreBreakDowns[side].captured = capturedScore;
 			
-		//+2 longestRoad
-		if (longestRoad == side) score += 2;
-
+		//+2 longestRoad		
+		if (longestRoad == side) {
+			score += 2;
+			this.scoreBreakDowns[side].longest = 2;
+		}
+		
 		this.scores[side] = score;
 	}
 	
-	calcLongestRoad = (side) => {
+	calcLongestRoad = (side) => {		
 		var queue = [];
 		var visited = {};
-		var maxLength = 0;
+		var maxLength = 0;		
+				
+		var roadNetworks = [];
+		var netid;
+		var maxNetid = -1;
+		this.scoreBreakDowns[side].longest = 0;
+
 		//Loop through all rids
-		for (var rid = 0; rid < constants.COUNT_ROADS; rid++) {
+		for (var rid = 0; rid < constants.COUNT_ROADS; rid++) {			
 			if (!visited[rid] && this.roads[rid].side == side) { 
 				var length = 1;
 				visited[rid] = true;				
+				roadNetworks.push([rid]);
+				netid = roadNetworks.length-1;
+
 				//BFS follow road to find length
 				queue.push(rid);
 				while (queue.length) {
@@ -650,6 +694,7 @@ export class Board {
 						var adjRid = adjRids[i];
 						if (!visited[adjRid] && this.roads[adjRid].side == side) {
 							visited[adjRid] = true;
+							roadNetworks[netid].push(adjRid);
 							length++;
 							queue.push(adjRid);
 						}
@@ -658,19 +703,27 @@ export class Board {
 				}
 
 				//Finished BFS road length search
-				if (length > maxLength) maxLength = length;				
+				if (length > maxLength) {
+					maxLength = length;				
+					maxNetid = netid;
+				}
 			}
 		
 		}
-		
-		return maxLength;
+		var longestRids = (maxNetid != -1)? roadNetworks[maxNetid] : [];		
+		return {maxLength:maxLength, longestRids:longestRids};
 	}
 
-	trade = (tradeResids) => {		
+	trade = (tradeResids, override) => {
+		
+		var side = this.turn;
+		if (override) {			
+			this.res[side][tradeResids[3]]++;		
+			return {status:true, msg:'Resource added...'};
+		}
 		if (this.hasAlreadyTraded) return {status:false, msg:'Player has already traded once...'};
 		var target = tradeResids[3];
 		if (target == tradeResids[0] || target == tradeResids[1] || target == tradeResids[2]) return {status:false, msg:'Resource may not be traded for itself...'}; 
-		var side = this.turn;
 		this.res[side][tradeResids[0]]--;
 		this.res[side][tradeResids[1]]--;
 		this.res[side][tradeResids[2]]--;
@@ -694,10 +747,10 @@ export class Board {
 				var rid = Number.parseInt(action.substr(3));
 				this.lastNids.push(nid);
 				this.lastRids.push(rid);
-				var actionAddNode = this.addNode(nid);				
+				var actionAddNode = this.addNode(nid, false);				
 				if (actionAddNode.status) {
 					console.log('Added node', nid);
-					var actionAddRoad = this.addRoad(rid);	
+					var actionAddRoad = this.addRoad(rid, false);	
 					if (!actionAddRoad.status) return actionAddRoad;	
 					else console.log('Added road', rid);				
 				}
@@ -712,7 +765,7 @@ export class Board {
 					residFromChar(action[3]),
 					residFromChar(action[4])
 				];
-				var tradeAction = this.trade(tradeResids);
+				var tradeAction = this.trade(tradeResids, false);
 				if (!tradeAction.status) return tradeAction;
 				else console.log('traded', tradeResids);
 			}
@@ -721,7 +774,7 @@ export class Board {
 			else if (actionChar == 'N') {
 				var nid = Number.parseInt(action.substr(1,2));
 				this.lastNids.push(nid);
-				var actionAddNode = this.addNode(nid);
+				var actionAddNode = this.addNode(nid, false);
 				if (!actionAddNode.status) return actionAddNode;
 				else console.log('Added node', nid);
 			}
@@ -730,7 +783,7 @@ export class Board {
 			else if (actionChar == 'B') {
 				var rid = Number.parseInt(action.substr(1));
 				this.lastRids.push(rid);
-				var actionAddRoad = this.addRoad(rid);	
+				var actionAddRoad = this.addRoad(rid, false);	
 					if (!actionAddRoad.status) return actionAddRoad;
 					else console.log('Added road', rid);
 			}
@@ -746,6 +799,7 @@ export class Board {
 		this.calcScores();
 		if (this.isGameOver()) {
 			alert('Game Over!');
+			this.phase = constants.PHASE_GAME_OVER;
 			return {status:false, msg:'Game Over!'};
 		}
 

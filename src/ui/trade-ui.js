@@ -39,7 +39,7 @@ export class TradeUI extends Component {
 	}
 	
 	onTrade = (e) => {		
-		this.props.onTrade(this.props.resid);		
+		this.props.onTrade(e, this.props.resid);		
 	}
 	
 	renderDots = (y) => {

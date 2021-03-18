@@ -1,5 +1,5 @@
 import { html } from '../../lib/preact.js';
-import { PHASE_PLAY, PHASE_PLACE1_1, PHASE_PLACE2_1, PHASE_PLACE2_2, PHASE_PLACE1_2} from '../core/constants.js';
+import { PHASE_PLAY, PHASE_PLACE1_1, PHASE_PLACE2_1, PHASE_PLACE2_2, PHASE_PLACE1_2, PHASE_GAME_OVER} from '../core/constants.js';
 
 export function TurnUI (props) {	
 	var text;
@@ -12,6 +12,7 @@ export function TurnUI (props) {
 	else if (props.phase == PHASE_PLACE2_1) text = 'Player 2: Place first node and road';
 	else if (props.phase == PHASE_PLACE2_2) text = 'Player 2: Place second node and road';
 	else if (props.phase == PHASE_PLACE1_2) text = 'Player 1: Place second node and road';
+	else if (props.phase == PHASE_GAME_OVER) text = 'Game OVER!';
 	return (
 		html`
 			<text class="label"

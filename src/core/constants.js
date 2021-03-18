@@ -17,6 +17,7 @@ export const PHASE_PLACE2_1 = 1;
 export const PHASE_PLACE2_2 = 2;
 export const PHASE_PLACE1_2 = 3;
 export const PHASE_PLAY = 4;
+export const PHASE_GAME_OVER = 5;
 
 export const VAL_ONE = 1;
 export const VAL_TWO = 2;
@@ -28,7 +29,6 @@ export const RES_BLUE = 2;
 export const RES_RED = 3;
 export const RES_VACANT = 4;
 
-export const PLAYER_HUMAN = 0;
 
 export const SCORE_WIN = 10;
 

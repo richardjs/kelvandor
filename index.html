@@ -94,12 +94,10 @@
   </style>  
 </head>
 <body>    
-  <div id="status"></div>
-  <script>
-	//Globals
-	var lblStatus = document.getElementById('status');
-
-  </script>
-  <script type="module" src="src/index.js"></script>           
+  <script src="lib/dat.gui/dat.gui.min.js"></script>
+  <script> var menu;</script>
+  <link rel="stylesheet" href="lib/dat.gui/dat.gui.css"/><!-- needs to be after js import -->   
+  <script type="module" src="src/index.js"></script>
+  <div id="app"></div>       
 </body>
 </html>

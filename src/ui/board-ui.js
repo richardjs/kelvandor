@@ -1,7 +1,9 @@
 import * as constants from '../core/constants.js';
+import { PLAYER_HUMAN, PLAYER_KELVANDOR} from './menu.js';
 import {UNIT_TILE, UNIT_NODE, UNIT_ROAD, RES_COLORS, SIDE_COLORS} from './constants-ui.js';
 import {Board, DEFAULT_BOARD_STATE} from '../core/board.js';
 import * as networkPlayer from '../../lib/network-player.js';
+import * as Url from '../../lib/url-lib.js';
 
 
 import { html, Component } from '../../lib/preact.js';
@@ -13,65 +15,64 @@ import { ResMiniUI } from './res-mini-ui.js';
 import { ScoreUI } from './score-ui.js';
 import { TurnUI } from './turn-ui.js';
 
+
 const KEY_ENTER = 13;
 const DELAY_FLASH_MSG = 2000; //MS
+const DELAY_PLAY_NEXT = 500;
 
 
 export class BoardUI extends Component {
 	state = {msg:''}
 
 	constructor() {
-		super();		
-		//lblStatus.innerHTML = 'test';
+		super();				
 		document.addEventListener('keydown', this.onKeyDown);
 		document.addEventListener('contextmenu', this.onRightClick);			
 		
-		this.board = Board.fromString(DEFAULT_BOARD_STATE);
-		//this.board = new Board();
-		//this.board.defaultSetup();		
-		this.history = [this.board.toString()];
-		this.historyIndex = 0;
 
-		this.kelvandorIterations = 10000;
+		var boardStr = DEFAULT_BOARD_STATE;
+		if (performance.navigation.type == 0) { //First time on this page
+			var hash = window.location.hash.replace('#', '');
+			if (hash.length > 50) boardStr = hash;		
+			else Url.setHashNonVolatile(''); //Clear state
+		}
+		else Url.setHashNonVolatile('');  //Refresh - clear state
+
+		this.board = Board.fromString(boardStr);
+			
+		this.history = [this.board.toString()];
+		this.historyIndex = 0;		
 	}
 		
 	
-	//Events		
-	onNodeClick = (nid) => {
-		var action = this.board.addNode(nid);		
-		if (action.status) {			
-			this.recordState();
-		}
-		this.flashMsg(action.msg);	
-	}
-	
-	onRoadClick = (rid) => {
-		var action = this.board.addRoad(rid);
-		if (action.status) {			
-			this.recordState();
-		}
-		this.flashMsg(action.msg);	
-	}
-	
-	onKeyDown = (e) => {		
+	//Events				
+	onKeyDown = (e) => {	
+		
 		if (e.keyCode == KEY_ENTER) {
 			this.board.changeTurn();
 			this.forceUpdate();
+			this.playNext();
 		}
 		
-		if (e.key == 'k' && !document.getElementById('btnPlayRandom').disabled) {
-			this.playRandom();
+		if (e.key == 'k' && !document.getElementById('btnPlayNetwork').disabled) {
+			this.playNetwork();
+		}
+
+		else if (e.key == 'p') {
+			if (!this.isHumanTurn()) this.playNetwork();			
 		}
 
 		if (e.key == 's') {
-			this.onShuffle();
-			this.forceUpdate();
+			this.onShuffle();			
 		}
 		
+		if (e.key == 'f') { //Hack to refresh for menu events
+			this.forceUpdate();
+		}
+
 		//Conflict with Red trade resource
 		if (e.key == 'n') { //new
-			this.onReset();
-			this.forceUpdate();
+			this.onReset();			
 		}
 	
 		if (e.key == 'ArrowLeft' || (e.key == 'z' && e.ctrlKey)) { //undo
@@ -82,8 +83,29 @@ export class BoardUI extends Component {
 		}		
 	}
 	
+	onNodeClick = (e, nid) => {		
+		if (!this.isHumanTurn()) return;
+		var action = this.board.addNode(nid, e.ctrlKey);		
+		if (action.status) {			
+			this.recordState();
+			this.playNext();
+		}
+		this.flashMsg(action.msg);	
+	}
+	
+	onRoadClick = (e, rid) => {
+		if (!this.isHumanTurn()) return;
+
+		var action = this.board.addRoad(rid, e.ctrlKey);
+		if (action.status) {			
+			this.recordState();
+			this.playNext();
+		}
+		this.flashMsg(action.msg);	
+	}
+
 	onRightClick = (e) => {
-		e.preventDefault();
+		e.preventDefault(); //Prevent context menu when right clicking to cancel resource trading
 	}
 
 
@@ -91,7 +113,7 @@ export class BoardUI extends Component {
 		this.board.reset();
 		this.board.shuffle();
 		this.forceUpdate();
-		this.recordState();
+		this.recordState();		
 	}
 
 	onReset = (e) => {
@@ -100,37 +122,49 @@ export class BoardUI extends Component {
 		this.recordState();
 	}
 
-	//onHarvest = (e) => {
-	//	this.board.harvest();
-	//	this.forceUpdate();		
-	//}
-	
+
 	onChangeTurn = (e) => {
+		if (!this.isHumanTurn()) return;
 		var action = this.board.changeTurn(true);
 		if (action.status) {
-			this.recordState();
+			this.recordState();			
 			document.dispatchEvent(new KeyboardEvent('keydown',{'keyCode':27})); //Hack to clear trade UI - TODO: replace with game event				
+			this.playNext();
 		}
 		this.flashMsg(action.msg);
 	}
 
-	onTrade = (tradeResids) => {
-		var action = this.board.trade(tradeResids);
+	onTrade = (e, tradeResids) => {		
+		if (!this.isHumanTurn()) return;
+		
+		var action = this.board.trade(tradeResids, e.ctrlKey);
 		this.recordState();		
 		this.flashMsg(action.msg);
+		this.playNext();
 	}
 
 
-	playRandom = (e) => {	
+	playNext = () => {
+		if (this.board.phase == constants.PHASE_GAME_OVER) return;
+		if (!this.isHumanTurn()) {
+			var self = this;
+			setTimeout(function() {			
+				self.playNetwork();				
+			}, DELAY_PLAY_NEXT);
+		}			
+	}
+
+	playNetwork = (e) => {	
 		var btnDone = document.getElementById('btnDone');
-		var btnPlayRandom = document.getElementById('btnPlayRandom');
+		var btnPlayNetwork = document.getElementById('btnPlayNetwork');
+		btnPlayNetwork.disabled = true;
+		btnPlayNetwork.style.display = 'block';
 		if (btnDone) {
-			btnDone.disabled = true;
+			btnDone.disabled = true;			
 		}
-		btnPlayRandom.disabled = true;
 
 		var self = this;
-		networkPlayer.getMove(this.board.toString(), this.kelvandorIterations, function(actions) {
+		networkPlayer.getMove(this.board.toString(), menu.iterations, function(actions) {
 			var actionResult = self.board.playActions(actions);
 			self.recordState();
 			
@@ -140,29 +174,28 @@ export class BoardUI extends Component {
 			self.flashMsg(actionResult.msg);
 			
 			if (btnDone) btnDone.disabled = false;							
-			btnPlayRandom.disabled = false;
+			btnPlayNetwork.disabled = false;
+			btnPlayNetwork.style.display = 'none';
+			self.playNext();
 		});
 	}
-
-	setIterations = (e) => {
-		this.kelvandorIterations = prompt('Enter iterations', this.kelvandorIterations);
-	}
+	
 
 
-	loadString = (e) => {
-		var string = prompt('Enter string');
-		if (string == null || string.length == 0) return;
-
-		this.board = Board.fromString(string);
-		this.forceUpdate();
-
-		this.recordState()
-	}
-
+	//loadString = (e) => {
+	//	var string = prompt('Enter string');
+	//	if (string == null || string.length == 0) return;
+	//
+	//	this.board = Board.fromString(string);
+	//	this.forceUpdate();
+	//
+	//	this.recordState()
+	//}
+	
 
 	recordState = () => {
 		var boardStr = this.board.toString();
-		//window.location.hash = boardStr;
+		Url.setHashNonVolatile(boardStr);
 		this.history = this.history.slice(0, this.historyIndex + 1);
 		this.history.push(boardStr);
 		this.historyIndex++;
@@ -177,7 +210,9 @@ export class BoardUI extends Component {
 
 	undo = () => {
 		if (this.historyIndex > 0) {
-			this.board = Board.fromString(this.history[--this.historyIndex]);
+			var boardStr = this.history[--this.historyIndex];
+			this.board = Board.fromString(boardStr);
+			Url.setHashNonVolatile(boardStr);
 			this.forceUpdate();
 		}
 	}
@@ -186,6 +221,7 @@ export class BoardUI extends Component {
 		if (this.historyIndex < this.history.length - 1) {
 			var next = this.history[++this.historyIndex];
 			this.board = Board.fromString(next);
+			Url.setHashNonVolatile(next);
 			this.forceUpdate();
 		}
 	}
@@ -198,6 +234,13 @@ export class BoardUI extends Component {
 			if (self.state.msg == msg) self.setState({msg:''});
 		}, DELAY_FLASH_MSG);
 	}
+
+	isHumanTurn = () => {
+		var players = [parseInt(menu.player1), parseInt(menu.player2)];	
+		if (players[this.board.turn] == PLAYER_HUMAN  ) return true;
+		else return false;
+	}
+	
 	
 	//Rendering methods
 	renderTiles = () => {
@@ -231,6 +274,7 @@ export class BoardUI extends Component {
 	}
 	
 	renderRoads = () => {
+		
 		var roadUIs = [];
 		for (var rid = 0; rid < this.board.roads.length; rid++) {					
 			var road = this.board.roads[rid];
@@ -240,7 +284,8 @@ export class BoardUI extends Component {
 			var orient = road.orientation;
 			var side = road.side;
 			var last = (this.board.lastRids.indexOf(rid) >= 0)? true : false;
-			roadUIs.push(html`<${RoadUI} rid=${rid} side=${side} orient=${orient} last=${last} x=${x} y=${y} color=${color} click=${this.onRoadClick}/>`);
+			var inLongest = (this.board.longestRids.indexOf(rid) >= 0)? true : false;
+			roadUIs.push(html`<${RoadUI} rid=${rid} side=${side} orient=${orient} last=${last} x=${x} y=${y} color=${color} click=${this.onRoadClick} inLongest=${inLongest}/>`);
 		}
 		return roadUIs;
 	}
@@ -268,35 +313,23 @@ export class BoardUI extends Component {
 		);
 	}
 
-	//renderPlayers = () => {
-	//	return (
-	//		html `
-	//			<label for="selectPlayers">Player 1: </label>
-	//			<select id="selectPlayers">
-	//				<option>Human</option>
-	//			</select>
-	//		`
-	//	);
-	//}
+
 
 	render () {						
 		var turn = this.board.turn == constants.SIDE_1? 'Player 1' : 'Player 2';
 		var side = this.board.turn;
 		var oppSide = this.board.turn == constants.SIDE_1? constants.SIDE_2 : constants.SIDE_1;
+		
 		return (		
 			html`
-				<div id="panel">				
-					<button id="btnShuffle" onclick=${this.onShuffle}>Shuffle</button> <br/>
-					<button id="btnShuffle" onclick=${this.onReset}>Reset</button> <br/>
-					<button id="btnLoadString" onclick=${this.loadString}>Load String</button> <br/>
-					<button id="btnPlayRandom" onclick=${this.playRandom}>Play Kelvandor</button> <br/>
-					<button id="btnSetIterations" onclick=${this.setIterations}>Set Iterations</button>
+				<div id="panel">														
+					<button id="btnPlayNetwork" readonly="readonly" style="display:none">Kelvandor playing</button>				
 				</div>
 				${this.renderDone()}
 				
 				<svg width="800" height="800">
-					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[0]}/>
-					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[1]}/>
+					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[constants.SIDE_1]} info=${this.board.scoreBreakDowns[constants.SIDE_1]}/>
+					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[constants.SIDE_2]} info=${this.board.scoreBreakDowns[constants.SIDE_2]}/>
 					<${TurnUI} x="10" y="575" label="Turn:" value=${turn} phase=${this.board.phase}/>												
 					${this.renderResMini(415, 5, oppSide)}																
 
