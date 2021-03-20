@@ -11,9 +11,9 @@ function MenuProperties() {
 	this.shuffle = onShuffle;
 	this.reset = onReset;
 	this.play = onPlay;
-	this.iterations = 1000;
-	this.valueAlert = false;
-	this.alertThreshold = .9;
+	this.iterations = this.getDefault('iterations', 1000);
+	this.valueAlert = this.getDefault('valueAlert', false);
+	this.alertThreshold = this.getDefault('alertThreshold', .9);
 	this.rules = function() {window.location = 'http://qndgames.com/wp-content/uploads/2018/10/Node-Manual-V4.55-Rule-Sheet-Website-Full-copy.pdf'; }	
 }
 
@@ -44,9 +44,9 @@ export function MenuManager() {
 	var optionsMenu = this.rootMenu.addFolder('Options');			
 	optionsMenu.add(this.properties, 'showLongest').onChange(this.persistChange);	
 	optionsMenu.add(this.properties, 'scoreInfo').onChange(this.persistChange);	
-	optionsMenu.add(this.properties, 'iterations');
-	optionsMenu.add(this.properties, 'valueAlert');
-	optionsMenu.add(this.properties, 'alertThreshold');
+	optionsMenu.add(this.properties, 'iterations').onChange(this.persistChange);
+	optionsMenu.add(this.properties, 'valueAlert').onChange(this.persistChange);
+	optionsMenu.add(this.properties, 'alertThreshold').onChange(this.persistChange);
 		
 	//Links menu
 	var linksMenu = this.rootMenu.addFolder('Links');			
