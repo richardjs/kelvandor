@@ -12,6 +12,8 @@ function MenuProperties() {
 	this.reset = onReset;
 	this.play = onPlay;
 	this.iterations = 1000;
+	this.valueAlert = false;
+	this.alertThreshold = .9;
 	this.rules = function() {window.location = 'http://qndgames.com/wp-content/uploads/2018/10/Node-Manual-V4.55-Rule-Sheet-Website-Full-copy.pdf'; }	
 }
 
@@ -31,7 +33,7 @@ MenuProperties.prototype.getDefault = function(propertyName, defaultValue) {
 //Class MenuManager
 export function MenuManager() {
 	var PLAYER_OPTIONS = {
-		Human:PLAYER_HUMAN, 		
+		Human:PLAYER_HUMAN,
 		Kelvandor:PLAYER_KELVANDOR
 	};		
 	this.properties = new MenuProperties();
@@ -43,14 +45,15 @@ export function MenuManager() {
 	optionsMenu.add(this.properties, 'showLongest').onChange(this.persistChange);	
 	optionsMenu.add(this.properties, 'scoreInfo').onChange(this.persistChange);	
 	optionsMenu.add(this.properties, 'iterations');
+	optionsMenu.add(this.properties, 'valueAlert');
+	optionsMenu.add(this.properties, 'alertThreshold');
 		
 	//Links menu
 	var linksMenu = this.rootMenu.addFolder('Links');			
 	linksMenu.add(this.properties, 'rules');
 
 	//Root menu			
-	this.rootMenu.add(this.properties, 'player1', PLAYER_OPTIONS).onChange(this.onChangePlayer);
-	this.rootMenu.add(this.properties, 'player2', PLAYER_OPTIONS).onChange(this.onChangePlayer);
+	this.rootMenu.add(this.properties, 'player1', PLAYER_OPTIONS).onChange(this.onChangePlayer); this.rootMenu.add(this.properties, 'player2', PLAYER_OPTIONS).onChange(this.onChangePlayer);
 	this.rootMenu.add(this.properties, 'shuffle');
 	this.rootMenu.add(this.properties, 'reset');
 	//this.rootMenu.add(this.properties, 'play');
