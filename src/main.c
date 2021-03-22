@@ -20,6 +20,19 @@ void printBanner(FILE* stream)
 }
 
 
+void printUsage(char name[])
+{
+    fprintf(stderr, "Usage: %s [options] serialized board\n\
+Options:\n\
+    -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
+    -g count\t\tgenerate starting state strings\n\
+    -i iterations\tnumber of MCTS iterations per action\n\
+    -m move scan\tprints move and action values\n\
+    -s\t\t\tsingle action mode\n\
+    -v\t\t\tprint version information and exit\n", name);
+}
+
+
 void printStarts(int count)
 {
     struct State state;
@@ -33,15 +46,21 @@ void printStarts(int count)
 }
 
 
-void printUsage(char name[])
+void printMoveScan(const struct State *state, const struct MCTSResults *results)
 {
-    fprintf(stderr, "Usage: %s [options] serialized board\n\
-Options:\n\
-    -c UCTC\t\tMCTS UCTC parameter, controlling exploration vs. exploitation\n\
-    -g count\t\tgenerate starting state strings\n\
-    -i iterations\tnumber of MCTS iterations per action\n\
-    -s\t\t\tsingle action mode\n\
-    -v\t\t\tprint version information and exit\n", name);
+    char actionString[ACTION_STRING_SIZE];
+    for (int i = 0; i < state->actionCount; i++) {
+        Action_toString(&state->actions[i], actionString);
+
+        // TODO Really should make this score calculation a function; we
+        // use it several places (or just track score on the node, if it
+        // benchmarks better)
+        int scoreSign = Action_changesTurn(
+            &state->actions[i], state) ? -1 : 1;
+        float score = scoreSign * results->tree->children[i]->value
+            / results->tree->children[i]->visits;
+        printf("%s\t%f\n", actionString, score);
+    }
 }
 
 
@@ -51,8 +70,10 @@ int main(int argc, char *argv[])
 
     struct MCTSOptions options;
     MCTSOptions_default(&options);
+    bool moveScan = false;
+
     int opt;
-    while ((opt = getopt(argc, argv, "i:c:sg:v")) != -1) {
+    while ((opt = getopt(argc, argv, "i:c:g:msv")) != -1) {
         switch (opt) {
             case 'i':
                 options.iterations = atoi(optarg);
@@ -60,12 +81,15 @@ int main(int argc, char *argv[])
             case 'c':
                 options.uctc = atof(optarg);
                 break;
-            case 's':
-                options.multiaction = false;
+            case 'm':
+                moveScan = true;
                 break;
             case 'g':
                 printStarts(atoi(optarg));
                 return 0;
+            case 's':
+                options.multiaction = false;
+                break;
             case 'v':
                 printBanner(stdout);
                 return 0;
@@ -99,8 +123,17 @@ int main(int argc, char *argv[])
         return 3;
     }
 
+    options.saveTree = true;
     struct MCTSResults results;
     mcts(&state, &results, &options);
+
+    if (moveScan) {
+        printMoveScan(&state, &results);
+        free(results.tree);
+        return 0;
+    }
+
+    free(results.tree);
 
     fprintf(stderr, "time:\t\t%ld ms\n", results.stats.duration);
     fprintf(stderr, "iterations:\t%ld\n", results.stats.iterations);

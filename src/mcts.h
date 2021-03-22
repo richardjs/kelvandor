@@ -5,6 +5,18 @@
 #include "state.h"
 
 
+struct Node {
+    bool expanded;
+    unsigned int visits;
+    float value;
+
+    struct Node **children;
+    uint_fast8_t childrenCount;
+
+    uint8_t depth;
+};
+
+
 struct MCTSOptions {
     uint64_t iterations;
     float uctc;

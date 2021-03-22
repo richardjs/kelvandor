@@ -18,18 +18,6 @@ struct MCTSOptions options;
 struct MCTSResults *results;
 
 
-struct Node {
-    bool expanded;
-    unsigned int visits;
-    float value;
-
-    struct Node **children;
-    uint_fast8_t childrenCount;
-
-    uint8_t depth;
-};
-
-
 /**
  * mallocs, checks for null, and increases results.stats.treeBytes
  */
