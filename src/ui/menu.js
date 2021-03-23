@@ -11,6 +11,7 @@ function MenuProperties() {
 	this.shuffle = onShuffle;
 	this.reset = onReset;
 	this.play = onPlay;
+	this.analyze = onAnalyze;
 	this.iterations = this.getDefault('iterations', 1000);
 	this.valueAlert = this.getDefault('valueAlert', false);
 	this.alertThreshold = this.getDefault('alertThreshold', .9);
@@ -55,8 +56,8 @@ export function MenuManager() {
 	//Root menu			
 	this.rootMenu.add(this.properties, 'player1', PLAYER_OPTIONS).onChange(this.onChangePlayer); this.rootMenu.add(this.properties, 'player2', PLAYER_OPTIONS).onChange(this.onChangePlayer);
 	this.rootMenu.add(this.properties, 'shuffle');
-	this.rootMenu.add(this.properties, 'reset');
-	//this.rootMenu.add(this.properties, 'play');
+	this.rootMenu.add(this.properties, 'reset');	
+	this.rootMenu.add(this.properties, 'analyze');
 }
 
 //Events
@@ -81,4 +82,8 @@ function onReset() {
 
 function onPlay() {
 	document.dispatchEvent(new KeyboardEvent('keydown',{'key':'p'})); 
+}
+
+function onAnalyze() {
+	document.dispatchEvent(new KeyboardEvent('keydown',{'key':'m'}));
 }

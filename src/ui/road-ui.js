@@ -47,6 +47,7 @@ export class RoadUI extends Component {
 		);
 	}
 
+
 	render() {		
 		var orient = this.props.orient;
 		var side = this.props.side;
@@ -72,7 +73,7 @@ export class RoadUI extends Component {
 					fill=${this.props.color} 					
 					onclick=${this.onClick}
 				/>
-				${this.renderInLongest(inLongest, x, y, orient)}
+				${this.renderInLongest(inLongest, x, y, orient)}				
 				`
 		);
 	}

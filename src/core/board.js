@@ -861,7 +861,7 @@ let itemAt = (r, c) => { //Bounded
 	else return ITEM_NONE;
 }
 
-let residFromChar = (c) => {
+export let residFromChar = (c) => {
 	switch(c) {
 		case 'B': return constants.RES_BLUE;
 		case 'G': return constants.RES_GREEN;

@@ -102,7 +102,8 @@ export class ResUI extends Component {
 			var value = res[resid];			
 			var color = resid;		
 			var dotCount = dots[resid];
-			tradeUIs.push(html`<${TradeUI} resid=${resid} x=${tradeX} y=${y} color=${color} value=${value} dots=${dotCount} onTrade=${this.onTrade} onDotAdded=${this.onDotAdded}/>`);
+			var analyzeTrade = this.props.analyzeRes[resid];
+			tradeUIs.push(html`<${TradeUI} resid=${resid} x=${tradeX} y=${y} color=${color} value=${value} dots=${dotCount} onTrade=${this.onTrade} onDotAdded=${this.onDotAdded} analyzeTrade=${analyzeTrade} />`);
 			tradeX += UNIT_TRADE;
 			if (resid == 1) tradeX += 20;
 		}		

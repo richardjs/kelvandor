@@ -1,7 +1,7 @@
 import * as constants from '../core/constants.js';
 import { PLAYER_HUMAN, PLAYER_KELVANDOR} from './menu.js';
 import {UNIT_TILE, UNIT_NODE, UNIT_ROAD, RES_COLORS, SIDE_COLORS} from './constants-ui.js';
-import {Board, DEFAULT_BOARD_STATE} from '../core/board.js';
+import {Board, DEFAULT_BOARD_STATE, residFromChar} from '../core/board.js';
 import * as networkPlayer from '../../lib/network-player.js';
 import * as Url from '../../lib/url-lib.js';
 
@@ -14,6 +14,7 @@ import { ResUI } from './res-ui.js';
 import { ResMiniUI } from './res-mini-ui.js';
 import { ScoreUI } from './score-ui.js';
 import { TurnUI } from './turn-ui.js';
+import { AnalyzeUI } from './analyze-ui.js';
 
 
 const KEY_ENTER = 13;
@@ -22,7 +23,12 @@ const DELAY_PLAY_NEXT = 500;
 
 
 export class BoardUI extends Component {
-	state = {msg:''}
+	state = {
+		msg:'', 
+		analyzeNodes:new Array(constants.COUNT_NODES),
+		analyzeRoads:new Array(constants.COUNT_ROADS), 
+		analyzeRes:new Array(constants.COUNT_RES), 				
+	}
 
 	constructor() {
 		super();				
@@ -74,7 +80,11 @@ export class BoardUI extends Component {
 		if (e.key == 'n') { //new
 			this.onReset();			
 		}
-	
+
+        if (e.key == 'm') {
+            this.analyze();
+        }
+
 		if (e.key == 'ArrowLeft' || (e.key == 'z' && e.ctrlKey)) { //undo
 			this.undo();
 		}
@@ -146,6 +156,14 @@ export class BoardUI extends Component {
 
 	playNext = () => {
 		if (this.board.phase == constants.PHASE_GAME_OVER) return;
+		
+		this.setState({				
+			analyzeEnd:undefined,
+			analyzeNodes:[],
+			analyzeRoads:[],
+			analyzeRes:[]
+		});
+
 		if (!this.isHumanTurn()) {
 			var self = this;
 			setTimeout(function() {			
@@ -179,18 +197,65 @@ export class BoardUI extends Component {
 			self.playNext();
 		});
 	}
-	
 
+    analyze = () => {
+		var self = this;
+        networkPlayer.getMoveScan(this.board.toString(), menu.iterations, function(actions) {
+			var analyzeNodes = new Array(constants.COUNT_NODES);
+			var analyzeRoads = new Array(constants.COUNT_ROADS); 
+			var analyzeRes = new Array(constants.COUNT_RES);
+			var analyzeEnd;			
+            for (var a = 0; a < actions.length; a++){
+				var item = actions[a];
+				var action = item.action;
+				var actionChar = action[0];
+				var val = item.value;
+				
+				//Start
+				if (actionChar == 's') { 
+					var nid = Number.parseInt(action.substr(1,2));
+					var rid = Number.parseInt(action.substr(3));					
+					analyzeNodes[nid] = val;
+					analyzeRoads[rid] = val;					
+				}
 
-	//loadString = (e) => {
-	//	var string = prompt('Enter string');
-	//	if (string == null || string.length == 0) return;
-	//
-	//	this.board = Board.fromString(string);
-	//	this.forceUpdate();
-	//
-	//	this.recordState()
-	//}
+				//Trade
+				else if (actionChar == 't') {
+					action = action.toUpperCase();
+					var colors = action.substr(1,3).toUpperCase();						
+					var target = residFromChar(action[4]);
+					if (!analyzeRes[target]) analyzeRes[target] = [];
+					analyzeRes[target].push({colors:colors, val:val});
+				}
+
+				//Build node
+				else if (actionChar == 'n') {
+					var nid = Number.parseInt(action.substr(1));		
+					analyzeNodes[nid] = val;
+				}
+
+				//Build branch (road)
+				else if (actionChar == 'b') {
+					
+					var rid = Number.parseInt(action.substr(1));						
+					analyzeRoads[rid] = val;
+				}
+
+				//End
+				else if (actionChar == 'e') {
+					analyzeEnd = val;
+				}
+			}
+			//console.log(analyzeRoads);
+			self.setState({				
+				analyzeEnd:analyzeEnd,
+				analyzeNodes:analyzeNodes,
+				analyzeRoads:analyzeRoads,
+				analyzeRes:analyzeRes
+			});
+        });
+    }
+
 	
 
 	recordState = () => {
@@ -268,7 +333,9 @@ export class BoardUI extends Component {
 			var color = SIDE_COLORS[node.side];		
 			var side = node.side;
 			var last = (this.board.lastNids.indexOf(nid) >= 0)? true : false;
-			nodeUIs.push(html`<${NodeUI} nid=${nid} side=${side} x=${x} y=${y} last=${last} color=${color} click=${this.onNodeClick}/>`);
+			
+			nodeUIs.push(html`<${NodeUI} nid=${nid} side=${side} x=${x} y=${y} last=${last} color=${color} click=${this.onNodeClick} />`);
+			nodeUIs.push(html`<${AnalyzeUI} x=${x+35} y=${y+UNIT_NODE} val=${this.state.analyzeNodes[nid]} />`);
 		}
 		return nodeUIs;
 	}
@@ -285,7 +352,9 @@ export class BoardUI extends Component {
 			var side = road.side;
 			var last = (this.board.lastRids.indexOf(rid) >= 0)? true : false;
 			var inLongest = (this.board.longestRids.indexOf(rid) >= 0)? true : false;
-			roadUIs.push(html`<${RoadUI} rid=${rid} side=${side} orient=${orient} last=${last} x=${x} y=${y} color=${color} click=${this.onRoadClick} inLongest=${inLongest}/>`);
+			
+			roadUIs.push(html`<${RoadUI} rid=${rid} side=${side} orient=${orient} last=${last} x=${x} y=${y} color=${color} click=${this.onRoadClick} inLongest=${inLongest} />`);
+			roadUIs.push(html`<${AnalyzeUI} x=${x+35} y=${y+UNIT_NODE} val=${this.state.analyzeRoads[rid]} />`);
 		}
 		return roadUIs;
 	}
@@ -295,7 +364,7 @@ export class BoardUI extends Component {
 	renderRes = (x, y, side) => {		
 		var res = this.board.res[side];
 		if (this.board.phase != constants.PHASE_PLAY) return;
-		return html`<${ResUI} side=${side} res=${res} x=${x} y=${y} onTrade=${this.onTrade}/>`;
+		return html`<${ResUI} side=${side} res=${res} x=${x} y=${y} onTrade=${this.onTrade} analyzeRes=${this.state.analyzeRes}/>`;
 	}
 	
 	renderResMini = (x, y, side) => {				
@@ -325,12 +394,13 @@ export class BoardUI extends Component {
 				<div id="panel">														
 					<button id="btnPlayNetwork" readonly="readonly" style="display:none">Kelvandor playing</button>				
 				</div>
-				${this.renderDone()}
+				${this.renderDone()}				
 				
 				<svg width="800" height="800">
 					<${ScoreUI} x="10" y="20" label="Score 1:" value=${this.board.scores[constants.SIDE_1]} info=${this.board.scoreBreakDowns[constants.SIDE_1]}/>
 					<${ScoreUI} x="650" y="20" label="Score 2:" value=${this.board.scores[constants.SIDE_2]} info=${this.board.scoreBreakDowns[constants.SIDE_2]}/>
 					<${TurnUI} x="10" y="575" label="Turn:" value=${turn} phase=${this.board.phase}/>												
+					<${AnalyzeUI} x=${600} y=${717.5} val=${this.state.analyzeEnd} />
 					${this.renderResMini(415, 5, oppSide)}																
 
 					${this.renderTiles()}

@@ -1,15 +1,5 @@
-Todo:
--Capture perimeter
-- Undo/redo with ctrl+z, ctrl+y
-- Chain AI player calls
-
 UI:
-- shorter urls ()
-- Player selection controls
-- Settings
-- show score breakdowns
-- highlight longest road
-- show id's on hover
+? show id's on hover
 - highlight tiles on harvest
 - favicon
  

@@ -102,6 +102,27 @@ export class TradeUI extends Component {
 			`
 		);
 	}
+
+	renderAnalyze = (x, y) => {
+		if (!this.props.analyzeTrade) return;
+		var elements = [];
+		var trades = this.props.analyzeTrade;
+		for (var t = 0; t < trades.length; t++){
+			var trade = trades[t];//{colors, val}
+			var val = Number.parseFloat(trade.val).toFixed(2);
+			var text = trade.colors + ' ' + val;
+			elements.push(
+				html`
+					<text class="lblAnalyze"
+						x=${x}
+						y=${y} 							
+					>${text}</text>	
+				`
+			);
+			y += 15;
+		}
+		return elements;
+	}
 	
 	render() {
 		var x = Number.parseInt(this.props.x);
@@ -112,6 +133,7 @@ export class TradeUI extends Component {
 				${this.renderCenter(x,y)}
 				${this.renderCenterText(x,y)}
 				${this.renderTrade(x,y+60)}
+				${this.renderAnalyze(x,y+100)}
 			`
 		);
 	}
