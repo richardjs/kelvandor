@@ -1,5 +1,6 @@
 import { html, Component } from '../../lib/preact.js';
 import {SIZE_TRADE_W, SIZE_TRADE_H, COUNT_TRADE, RES_COLORS, RES_COLORS_HOVER, RES_COLORS_DISABLED} from './constants-ui.js';
+import { AnalyzeUI} from './analyze-ui.js';
 
 const SIZE_DOT = 10;
 const UNIT_DOT = SIZE_DOT*2;
@@ -108,17 +109,8 @@ export class TradeUI extends Component {
 		var elements = [];
 		var trades = this.props.analyzeTrade;
 		for (var t = 0; t < trades.length; t++){
-			var trade = trades[t];//{colors, val}
-			var val = Number.parseFloat(trade.val).toFixed(2);
-			var text = trade.colors + ' ' + val;
-			elements.push(
-				html`
-					<text class="lblAnalyze"
-						x=${x}
-						y=${y} 							
-					>${text}</text>	
-				`
-			);
+			var trade = trades[t];//{colors, val}			
+			elements.push(html`<${AnalyzeUI} x=${x} y=${y} text=${trade.colors + ' '} val=${trade.val}/>`);
 			y += 15;
 		}
 		return elements;

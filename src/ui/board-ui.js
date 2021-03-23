@@ -246,7 +246,13 @@ export class BoardUI extends Component {
 					analyzeEnd = val;
 				}
 			}
-			//console.log(analyzeRoads);
+			
+			analyzeRes.sort(function compare(a, b) { //Used to sort by value
+				if (a.val > b.val) return 1;
+				else if (a.val < b.val) return -1;
+				else return 0;
+			});
+
 			self.setState({				
 				analyzeEnd:analyzeEnd,
 				analyzeNodes:analyzeNodes,
