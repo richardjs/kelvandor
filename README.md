@@ -8,5 +8,5 @@ Created in 2021 by Richard Schneider <richard@schneiderbox.net>.
 
 ## Roadmap
 
--[ ] Integrate (already built) UI into Kelvandor codebase
--[ ] Clean up code style to make consistent
+- Integrate (already built) UI into Kelvandor codebase
+- Clean up code style to make consistent
