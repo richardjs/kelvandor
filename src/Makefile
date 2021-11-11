@@ -15,6 +15,10 @@ test: $(objects)
 
 
 httpapi: kelvandor
+	gunicorn -b 0.0.0.0:5000 httpapi:app
+
+
+httpapi-dev:
 	FLASK_APP=httpapi.py FLASK_ENV=development flask run
 
 
