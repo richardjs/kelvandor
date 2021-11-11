@@ -1,0 +1,33 @@
+Board Notation: [88 chars + Player Resources]
+- Case insensitive
+
+- All positions are id'ed top-down, left-to right
+
+- Tiles [2 chars * 13], with 1 char resource color, and 1 char  dots
+(Note: for vacant, it will be V0)
+
+- Nodes [24  chars], with either a 1, or a 2 for the player, or 0 if empty
+
+- Branches [36 chars], with either a 1, or a 2 for the player, or 0 if empty
+
+- Phase [1 char]:
+--- 1 for Player 1 placing 1st move of game
+--- 2 for Player 2 placing 2nd move of game
+--- 3 for Player 2 placing 3rd move of game
+--- 4 for Player 1 placing 4th move of game
+--- 5 for Playing after the placing
+
+- Turn [1 char]: 1 for Player 1, 2 for Player 2
+
+- Player Resources:
+--- Counts in alpha order by color name, (G, Y, B, R), then Node count, and Road count
+--- Digits in hexadecimal
+--- Delimited by semi-colons
+
+
+For example, Player 1(3 Blues, 0 Greens, 1 Red, 10 Yellow, 0 Nodes, 3 Roads), Player 2 (11 Blues, 5 Greens, 2 Reds, 4 Yellows,5 Nodes, 10 Roads) = 3;0;1;A;0;3;B;5;2;4;5;A
+
+
+
+Default state example:
+    R2G1B2R3G2Y2V0G3Y1B3R1B1Y3222222222222222222222222222222222222222222222222222222222222000;0;0;0;0;0;0;0;1;1;1;1

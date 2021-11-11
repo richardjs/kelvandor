@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nodes & Roads</title>
+  <meta charset="utf-8"/>      
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--<link rel="shortcut icon" href="img/favicon.ico" />	
+  <link rel="stylesheet" href="css/main.css"/> -->
+  <style>
+	.tile, .node, .road {
+		stroke: #fff;
+		stroke-width: 0.2px;
+		z-index: 5;
+	}
+
+	.node.empty {
+		opacity: 0.0;
+	}
+	.node.empty:hover{	
+		opacity: 1.0;	
+		fill:#c0c0c0;
+	}
+
+	.road.empty {		
+		opacity: 0.0;
+	}	
+	.road.empty:hover {
+		opacity: 1.0;
+		fill:#bbbbbb;
+	}
+	
+	.last {
+		stroke: #eee;
+		stroke-width: 2px;
+	}
+
+	.label {
+		font-family: verdana;
+		font-size: 16pt;
+		pointer-events: none;
+		z-index: 10;	
+	}
+	
+
+	.label.small {		
+		font-size: 12pt;		
+	}
+	
+	.lblTrade {
+		fill: #efefef;
+		font-family: verdana;
+		font-size: 12pt;
+		font-weight: bold;
+		pointer-events: none;
+		z-index: 10;
+	}
+
+	.lblAnalyze {
+		fill: gray;
+		font-family: verdana;
+		font-size: 8pt;
+		font-weight: bold;
+		pointer-events: none;
+		z-index: 20;
+	}
+
+	.btn:hover {	
+		cursor: pointer;
+	}
+	
+	#btnDone {
+		position: absolute;
+		left: 600px;
+		top: 627px;
+		width: 100px;
+		height: 83px;
+		cursor: pointer;
+		
+	}
+
+	#btnShuffle {			
+		cursor: pointer;
+	}
+
+	#panel {
+		position: absolute;
+		left: 820px;					
+	}
+
+	#msg {
+		position: absolute;
+		text-align: center;
+		top: 750px;
+		left: 20px;
+		color: #c0c0c0;		
+		font-family: Arial, Helvetica, sans-serif;			
+		font-size: 12pt;
+	}
+	#status {
+		position: absolute;		
+		top: 850px;
+		z-index: 20;
+	}
+  </style>  
+</head>
+<body>    
+  <script src="lib/dat.gui/dat.gui.min.js"></script>
+  <script> var menu;</script>
+  <link rel="stylesheet" href="lib/dat.gui/dat.gui.css"/><!-- needs to be after js import -->   
+  <script type="module" src="src/index.js"></script>
+  <div id="app"></div>       
+</body>
+</html>

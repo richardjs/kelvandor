@@ -1,0 +1,17 @@
+UI:
+? show id's on hover
+- highlight tiles on harvest
+- favicon
+ 
+Cleanup / Refactor:
+- Remove board initializer code 
+- game events
+- linting
+- puppeteer testing
+- css / styles 
+
+Other:
+- Wasm player?
+- heuristic player
+- random player
+
