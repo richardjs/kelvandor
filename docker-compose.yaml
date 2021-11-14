@@ -1,0 +1,12 @@
+services:
+  kelvandor:
+    build: .
+    ports:
+      - "5000:5000"
+
+  ui:
+    image: nginx
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    ports:
+      - "8000:80"
