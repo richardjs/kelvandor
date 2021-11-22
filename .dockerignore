@@ -1,0 +1,4 @@
+src/kelvandor
+src/*.o
+src/*.log
+**/__pycache__
