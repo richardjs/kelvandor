@@ -40,7 +40,7 @@ def think(board):
             args += ['-m']
             mode = 'move scan'
 
-    p = Popen([KELVANDOR, board] + args, stdout=PIPE, stderr=PIPE)
+    p = Popen([KELVANDOR] + args + [board], stdout=PIPE, stderr=PIPE)
 
     if mode == 'move scan':
         actions = []
