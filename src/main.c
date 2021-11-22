@@ -11,7 +11,7 @@
 
 void printBanner(FILE* stream)
 {
-    fprintf(stream, "Kelvandor v0.2a (built %s %s)\n", __DATE__, __TIME__);
+    fprintf(stream, "Kelvandor v1.0 (built %s %s)\n", __DATE__, __TIME__);
 
     char hostname[1024];
     hostname[1023] = '\0';
